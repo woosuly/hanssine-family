@@ -4,7 +4,7 @@ let BOT=[],BOTIMG=null;
 function botSys(){return `너는 '${S.family}' 가족 앱의 AI 비서다. 사용자의 말이나 첨부 이미지(사진, 영수증, 병원 예약 문자 캡처, 초대장 등)를 보고 앱에 반영할 작업을 찾는다.
 반드시 JSON 하나만 출력한다: {"reply":"짧은 한국어 답","actions":[...]}
 actions 항목:
-- 일정 {"type":"event","date":"YYYY-MM-DD","end":"여행처럼 여러 날이면 YYYY-MM-DD","title":"","kind":"family|trip|hospital|jesa|school|anniv|custom","time":"HH:MM","place":"","repeat":"none|solar|lunar"}
+- 일정 {"type":"event","date":"YYYY-MM-DD","end":"여행처럼 여러 날이면 YYYY-MM-DD","title":"","kind":"family|trip|hospital|jesa|anniv|custom","time":"HH:MM","place":"","repeat":"none|solar|lunar"}
 - 회비 내역 {"type":"tx","date":"YYYY-MM-DD","desc":"","amount":정수(지출 음수, 입금 양수),"acc":"계좌 id"}
 - 공지 {"type":"notice","text":""}
 - 앨범 사진 {"type":"photo","caption":"","tag":"손주|풍경|모임"} (첨부가 일반 사진일 때)
@@ -34,7 +34,7 @@ function localIntent(t,img){const acts=[];t=t||'';
     acts.push({type:'poll',q:clean(body.split(/,|아니면|또는/)[0])||'언제가 좋을까요?',opts:opts.length>=2?opts.slice(-4):['좋아요','다음에']})}
   else if(/(공지|알려|전달)/.test(t)&&!date)acts.push({type:'notice',text:t.replace(/(공지|올려\s*줘|해\s*줘|알려\s*줘|전달해\s*줘)/g,'').trim()});
   else if(date){let end=null;const m=t.match(/(?:~|부터)\s*(?:(\d{1,2})\s*월\s*)?(\d{1,2})\s*일/);if(m)end=new Date(date.getFullYear(),(m[1]?+m[1]:date.getMonth()+1)-1,+m[2]);
-    const kind=/(병원|검진|진료|치과)/.test(t)?'hospital':/(여행|캠핑|휴가)/.test(t)?'trip':/(제사|기일|성묘)/.test(t)?'jesa':/(학교|시험|발표|졸업|입학)/.test(t)?'school':/(모임|식사|김장|생신|외식|모여)/.test(t)?'family':'custom';
+    const kind=/(병원|검진|진료|치과)/.test(t)?'hospital':/(여행|캠핑|휴가)/.test(t)?'trip':/(제사|기일|성묘)/.test(t)?'jesa':/(모임|식사|김장|생신|외식|모여)/.test(t)?'family':'custom';
     const tm=t.match(/(오전|오후)?\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분|\s*반)?/);let time='';if(tm){let h=+tm[2];if(tm[1]==='오후'&&h<12)h+=12;time=pad(h)+':'+(tm[3]?pad(+tm[3]):/반/.test(tm[0])?'30':'00')}
     acts.push({type:'event',date:ymd(date),end:end&&end>date?ymd(end):'',title:clean(t.replace(/(오전|오후)?\s*\d{1,2}\s*시(\s*\d{1,2}\s*분|\s*반)?|(~|부터)\s*(\d{1,2}\s*월\s*)?\d{1,2}\s*일(까지)?/g,''))||TYPES[kind][0],kind,time})}
   if(img&&(/(사진|앨범|올려)/.test(t)||(!acts.length)))acts.push({type:'photo',caption:clean(t.replace(/(사진|앨범|올려\s*줘)/g,''))||'새 사진',tag:'모임'});

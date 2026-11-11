@@ -1,7 +1,8 @@
 
 /* features/calendar */
 const TYPES={family:['가족 모임','#2E6A4E'],trip:['여행','#2D7FA8'],hospital:['병원','#BF3F2B'],jesa:['제사·기일','#6B5B4B'],school:['손주 학교','#3D5F8C'],anniv:['기념일','#B9771F'],custom:['직접 입력','#7A6A55'],etc:['기타','#7A6A55'],bday:['생일','#B9771F']};
-const EVKINDS=['family','trip','hospital','jesa','school','anniv','custom'];
+// 등록 화면에 보이는 종류 (손주 학교는 뺌. 예전에 등록된 일정 표시용으로 TYPES에는 남겨 둠)
+const EVKINDS=['family','trip','hospital','jesa','anniv','custom'];
 const REMINDS=[['day','당일 아침'],['d1','하루 전'],['d7','일주일 전']];
 function evOn(e,d){const k=ymd(d);
   if(e.end)return k>=e.date&&k<=e.end;
