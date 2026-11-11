@@ -48,11 +48,11 @@ function actText(a){
   if(a.type==='poll')return ['투표',a.q,(a.opts||[]).join(' / ')];
   if(a.type==='settle')return ['정산',`${a.title} · 총 ${won(a.total)}`,'세 가구 나누기'];
   return ['기타',JSON.stringify(a),'']}
-function applyAct(a,img){const r=me().role,isT=me().house===S.dues.treasurer;
+function applyAct(a,img){const r=me().role,isT=isTreas();
   if((a.type==='tx'||a.type==='settle')&&r!=='child')return '회비는 자녀만 반영할 수 있어요';
   if(a.type==='event'){const kind=TYPES[a.kind]&&EVKINDS.includes(a.kind)?a.kind:'custom';const e={id:uid(),date:a.date,title:a.title||TYPES[kind][0],type:kind,scope:kind==='hospital'?'adults':'all',time:a.time||'',place:a.place||'',escort:'',remind:['d1'],repeat:a.repeat||(kind==='jesa'?'lunar':'none')};
     if(a.end&&a.end>a.date)e.end=a.end;if(e.repeat==='lunar'){const l=S2L(parse(e.date));if(l){e.lm=l.m;e.ld=l.d}else e.repeat='none'}if(kind==='family'||kind==='trip')e.rsvp={};S.events.push(e);return '일정에 등록했어요'}
-  if(a.type==='tx'){if(!isT){S.chat=S.chat||[];S.chat.push({id:uid(),by:ME,ts:Date.now(),text:`[회비 기록 요청] ${a.date} ${a.desc} ${won(a.amount)} — 총무님 확인 부탁드려요`});return `총무(${HOUSES[S.dues.treasurer]})에게 기록 요청을 보냈어요`}
+  if(a.type==='tx'){if(!isT){S.chat=S.chat||[];S.chat.push({id:uid(),by:ME,ts:Date.now(),text:`[회비 기록 요청] ${a.date} ${a.desc} ${won(a.amount)} — 총무님 확인 부탁드려요`});return `총무(${S.dues.treasurer?HOUSES[S.dues.treasurer]:'미정'})에게 기록 요청을 보냈어요`}
     S.dues.tx.push({id:uid(),date:a.date,desc:a.desc,amt:a.amount,acc:accs().some(x=>x.id===a.acc)?a.acc:(accs()[0]||{}).id});return '회비 내역에 기록했어요'}
   if(a.type==='notice'){S.notices.push({id:uid(),by:ME,text:a.text,date:ymd(today0()),scope:'all',sms:false});return '공지로 올렸어요'}
   if(a.type==='photo'){if(!img)return '사진이 없어요';const fd=(S.folders.find(f=>f.name===a.tag)||S.folders.find(f=>f.id==='f_meet')||S.folders[0]).id;S.photos.push({id:uid(),by:ME,folder:fd,tag:fname(fd),caption:a.caption||'새 사진',date:ymd(today0()),scope:'all',img,reacts:{}});return '앨범에 올렸어요'}

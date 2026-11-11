@@ -35,7 +35,7 @@ function aiContext(pub){const vis=x=>pub?x.scope==='all':canSee(x);
   L.push('[공지·소식]');S.notices.filter(vis).slice(-5).forEach(n=>L.push(`- ${n.date} ${mem(n.by).name}: ${n.text}`));
   const hs=Object.values(holidays(t.getFullYear())).length?Object.entries({...holidays(t.getFullYear()),...holidays(t.getFullYear()+1)}).filter(([k])=>k>=ymd(t)).slice(0,6):[];
   L.push('[다가오는 공휴일]');hs.forEach(([k,v])=>L.push(`- ${k} ${v}`));
-  if(!pub&&m.role==='child'){L.push(`[회비] 전체 잔액 ${won(balance())} (${accs().map(a=>a.name+' '+won(balance(a.id))).join(', ')}), 방식 ${(MODES.find(x=>x[0]===S.dues.mode)||MODES[0])[1]}, 총무 ${HOUSES[S.dues.treasurer]}`)}
+  if(!pub&&m.role==='child'){L.push(`[회비] 전체 잔액 ${won(balance())} (${accs().map(a=>a.name+' '+won(balance(a.id))).join(', ')}), 방식 ${(MODES.find(x=>x[0]===S.dues.mode)||[,'미정'])[1]}, 총무 ${S.dues.treasurer?HOUSES[S.dues.treasurer]:'미정'}`)}
   if(me().role!=='grand'||!pub){L.push('[부모님 운동 기록(분), 최근 62일]');S.members.filter(x=>x.role==='parent').forEach(p=>{const a=[];for(let i=61;i>=0;i--){const k=ymd(addDays(t,-i));const x=(S.log[k]||{})[p.id]||{};if(x.ev&&x.ev.length)a.push(k.slice(5)+' '+x.ev.map(e=>exName(e.k)+e.m).join('+'))}L.push(`- ${p.name}: ${a.join(', ')||'기록 없음'}`)})}
   L.push(`[날씨 예보, 예시 데이터] ${S.weather.loc}: `+S.weather.week.map((w,i)=>`${md(addDays(t,i))} ${w[2]} ${w[1]}~${w[0]}° 강수 ${w[3]}%`).join(' / '));
   return L.join('\n');

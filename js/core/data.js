@@ -62,7 +62,7 @@ function seed(){
 function cleanSeed(){const s=seed();
   s.members.forEach(m=>{m.phone='';m.bd={m:0,d:0,cal:'solar'}});
   Object.assign(s,{photos:[],events:[],poll:null,settles:[],log:{},notices:[],chat:[],seen:{},myPhr:{},trPacks:{}});
-  s.dues={mode:'event',monthly:0,perHouse:{h1:0,h2:0,h3:0},treasurer:'h1',paid:{},accounts:[],tx:[]};
+  s.dues={mode:'',monthly:0,perHouse:{},treasurer:'',paid:{},accounts:[],tx:[]};
   return s}
 const KEY='hanssine-proto-v7';
 // ?local=1 이면 서버 없이 이 기기에만 저장 (개발용), &clean=1 이면 빈 데이터로 시작
