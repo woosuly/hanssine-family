@@ -4,7 +4,7 @@ const MICSVG='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" widt
 function toast(msg){const el=document.createElement('div');el.className='toast';el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),2400)}
 function sheet(html,full,back){BACK=back||null;$('#layer').innerHTML=`<div class="dim" id="dim"><div class="sheet ${full?'full':''}" role="dialog"><div class="shead"><button class="back" id="sback">${BACKSVG}<span>뒤로</span></button></div>${html}</div></div>`;
   $('#dim').addEventListener('click',e=>{if(e.target.id==='dim')goBack()});$('#sback').onclick=goBack}
-function close(){stopListen();$('#layer').innerHTML=''}
+function close(){stopListen();$('#layer').innerHTML='';if(!LOCAL)syncAfterClose()}
 const FS=[[1,'보통'],[1.15,'크게'],[1.3,'아주 크게']];
 function scale(){return ((S.prefs||{})[ME]||{}).fs||1}
 function applyScale(){applyTheme();const k=scale();
@@ -38,7 +38,7 @@ const IC={
   swap:'<svg viewBox="0 0 24 24"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>'};
 const ib=(id,ic,label,extra)=>`<button class="ibtn ${extra||''}" id="${id}" aria-label="${label}" title="${label}">${IC[ic]}</button>`;
 function readFile(f){return new Promise(res=>{const r=new FileReader();r.onload=()=>res({name:f.name,size:f.size,type:f.type||'',data:r.result});r.readAsDataURL(f)})}
-const LIM={img:2048,vidSec:60,vidMB:50,fileMB:20};
+const LIM={img:1600,vidSec:60,vidMB:50,fileMB:20};
 function vidDur(data){return new Promise(res=>{const v=document.createElement('video');v.preload='metadata';v.onloadedmetadata=()=>res(v.duration||0);v.onerror=()=>res(0);v.src=data})}
 async function prepFile(f){
   if(/^image\//.test(f.type)&&!/gif|svg/.test(f.type)){const x=await readFile(f);const d=await shrink(x.data,LIM.img);return {...x,data:d,type:'image/jpeg',size:Math.round(d.length*.75)}}
@@ -47,8 +47,8 @@ async function prepFile(f){
   if(f.size>LIM.fileMB*1e6){toast(`파일은 ${LIM.fileMB}MB까지 올릴 수 있어요`);return null}
   return readFile(f)}
 function compress(f){return prepFile(f).then(x=>x?x.data:Promise.reject())}
-function shrink(img,max){return new Promise(res=>{const im=new Image();im.onload=()=>{const s=Math.min(1,(max||1600)/Math.max(im.width,im.height));if(s===1&&img.length<1.5e6)return res(img);
-  const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.85))};im.onerror=()=>res(img);im.src=img})}
+function shrink(img,max){return new Promise(res=>{const im=new Image();im.onload=()=>{const s=Math.min(1,(max||1600)/Math.max(im.width,im.height));if(s===1&&img.length<7e5)return res(img);
+  const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.8))};im.onerror=()=>res(img);im.src=img})}
 const fsize=n=>n>1e6?(n/1e6).toFixed(1)+'MB':Math.max(1,Math.round(n/1e3))+'KB';
 const isImg=f=>/^image\//.test(f.type),isVid=f=>/^video\//.test(f.type),isAud=f=>/^audio\//.test(f.type);
 const fileInputs=pfx=>`<input type="file" id="${pfx}img" accept="image/*,video/*" multiple hidden><input type="file" id="${pfx}cam" accept="image/*" capture="environment" hidden><input type="file" id="${pfx}file" multiple hidden>`;

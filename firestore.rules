@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signed() { return request.auth != null; }
+    function devPath() { return /databases/$(db)/documents/families/hanssine/devices/$(request.auth.uid); }
+    function invitePath() { return /databases/$(db)/documents/families/hanssine/private/invite; }
+    function masterPath() { return /databases/$(db)/documents/families/hanssine/state/master; }
+    // 등록된 폰(가족)인지
+    function member() { return signed() && exists(devPath()); }
+    // 관리자 폰인지
+    function admin() { return member() && exists(masterPath()) && get(devPath()).data.member == get(masterPath()).data.member; }
+
+    // 가족 데이터: 등록된 폰만 읽고 씀. 관리자 지정(master)은 관리자만 변경
+    match /families/hanssine/state/{id} {
+      allow read: if member();
+      allow write: if member() && (id != 'master' || admin() || !exists(masterPath()));
+    }
+    match /families/hanssine/items/{id} {
+      allow read, write: if member();
+    }
+    // 초대 코드: 관리자만 보고 바꿈. 처음 한 번만 누구나 만들 수 있음(첫 설치)
+    match /families/hanssine/private/invite {
+      allow read, update: if admin();
+      allow create: if signed() && !exists(invitePath())
+        && request.resource.data.code is string && request.resource.data.code.size() >= 4;
+    }
+    // 폰 등록: 초대 코드가 맞아야 등록. 관리자는 등록 해제 가능
+    match /families/hanssine/devices/{uid} {
+      allow read: if member() || (signed() && request.auth.uid == uid);
+      allow create: if signed() && request.auth.uid == uid
+        && request.resource.data.code == getAfter(invitePath()).data.code;
+      allow update: if signed() && request.auth.uid == uid && request.resource.data.code == resource.data.code;
+      allow delete: if admin() || (signed() && request.auth.uid == uid);
+    }
+  }
+}

@@ -58,13 +58,21 @@ function seed(){
   return {v:7,myPhr:{},seen:{m:Date.now()-2*36e5,f:Date.now()-30*36e5},trPacks:{},family:'한씨네',members,photos,events,poll,dues,settles,log,notices,weather,chat,prefs:{},emergency:['d1','d2','d3'],
     ai:{def:'gemini',keys:{gemini:'',openai:'',claude:''},models:{}},master:{member:'s1',pin:'0000'},notify:{smsParents:true,smsAll:false,items:{notice:true,hospital:true,bday:true}}};
 }
+// 실제 운영용 첫 데이터: 구성원만 두고 예시 내용은 비움
+function cleanSeed(){const s=seed();
+  s.members.forEach(m=>{m.phone='';m.bd={m:0,d:0,cal:'solar'}});
+  Object.assign(s,{photos:[],events:[],poll:null,settles:[],log:{},notices:[],chat:[],seen:{},myPhr:{},trPacks:{}});
+  s.dues={mode:'monthly',monthly:50000,perHouse:{h1:50000,h2:50000,h3:50000},treasurer:'h1',paid:{},accounts:[],tx:[]};
+  return s}
 const KEY='hanssine-proto-v7';
+// ?local=1 이면 서버 없이 이 기기에만 저장 (개발용), &clean=1 이면 빈 데이터로 시작
+const LOCAL=/[?&]local=1/.test(location.search);
 let S;
-try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
-if(!S||S.v!==7)S=seed();
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+if(LOCAL&&!/[?&]clean=1/.test(location.search)){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}}
+if(!S||S.v!==7)S=LOCAL&&!/[?&]clean=1/.test(location.search)?seed():cleanSeed();
+const save=()=>{if(LOCAL){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}else syncSave()};
 let ME=null;
-try{ME=localStorage.getItem(KEY+'-device')}catch(e){}
+if(LOCAL)try{ME=localStorage.getItem(KEY+'-device')}catch(e){}
 let TAB='home',CSUB='cal',DSUB='dues',CHAT=[],CAL=today0(),SEL=today0(),FILTER={tag:'전체',by:''},VI=0;
 const mem=id=>S.members.find(m=>m.id===id);
 const me=()=>mem(ME);

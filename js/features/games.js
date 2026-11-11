@@ -45,7 +45,8 @@ function gameNumbers(){
 }
 function gameWho(){
   const [Q,O]={easy:[3,3],normal:[5,3],hard:[5,4]}[lvOf('who')];
-  const qs=S.photos.filter(canSee).sort(()=>Math.random()-.5).slice(0,Q);let i=0,ok=0;
+  const qs=S.photos.filter(p=>canSee(p)&&mem(p.by)).sort(()=>Math.random()-.5).slice(0,Q);let i=0,ok=0;
+  if(!qs.length){sheet(`<div class="stack"><h2>아직 가족 사진이 없어요</h2><p class="muted">사진이 올라오면 할 수 있어요.</p></div>`,true,gameMenu);return}
   const ask=()=>{const p=qs[i],ans=mem(p.by);
     const opts=[ans,...S.members.filter(x=>x.id!==ans.id&&x.id!==ME).sort(()=>Math.random()-.5).slice(0,O-1)].sort(()=>Math.random()-.5);
     sheet(`${i===0?lvBar('who'):''}<h2 style="margin-top:.4em">이 사진은 누가 올렸을까요? <span class="muted num">${i+1}/${qs.length}</span></h2>

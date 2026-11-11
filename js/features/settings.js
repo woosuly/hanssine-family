@@ -34,10 +34,11 @@ function setView(){
       ${Object.entries(AIS).map(([k,[n]])=>`<div class="field"><label for="aik-${k}">${n} API 키</label><input id="aik-${k}" type="password" autocomplete="off" value="${esc((aiCfg().keys||{})[k]||'')}" placeholder="비워 두면 사용 안 함"></div>
         <div class="field"><label for="aim-${k}">${n} 모델</label><input id="aim-${k}" value="${esc((aiCfg().models||{})[k]||'')}" placeholder="${AI_DEF[k]}"></div>`).join('')}
       <div class="row"><button class="btn" id="aisv">저장</button><button class="btn ghost" id="aitest">연결 시험</button></div>
-      <div class="small muted" id="aimsg">실제 배포 때는 키를 서버에만 두고 앱에는 노출하지 않습니다.</div></div></details>
+      <div class="small muted" id="aimsg">키는 등록된 가족 폰에서만 읽을 수 있습니다. 서버 보관은 다음 단계에서 적용합니다.</div></div></details>
+    ${!LOCAL?`<details id="dvx"><summary>초대 코드 · 등록된 폰</summary><div class="in" id="dvin"><div class="small muted">불러오는 중…</div></div></details>`:''}
     <details><summary>관리자 PIN · 초기화</summary><div class="in">
       <div class="row" style="flex-wrap:nowrap"><div class="field" style="flex:1"><label for="npin">새 PIN</label><input id="npin" type="password" inputmode="numeric" maxlength="6"></div><button class="btn" id="pinsv" style="align-self:flex-end">변경</button></div>
-      <button class="btn ghost block" id="reset">예시 데이터로 초기화</button></div></details>`:''}
+      <button class="btn ghost block" id="reset">${LOCAL?'예시 데이터로 초기화':'모든 데이터 초기화'}</button></div></details>`:''}
     ${DEV?`<div class="set-h">개발자</div>
     <details open><summary>관리자 지정</summary><div class="in">
       <div class="field"><label for="admsel">관리자</label><select id="admsel">${S.members.filter(x=>x.role!=='parent').map(x=>`<option value="${x.id}" ${x.id===S.master.member?'selected':''}>${esc(byLabel(x))}</option>`).join('')}</select></div>
@@ -64,7 +65,8 @@ function bindSet(){
       try{const a=await callAI('한 문장으로만 답한다.',[{role:'user',text:'연결 확인. "연결되었습니다"라고만 답해.'}]);$('#aimsg').textContent='응답: '+a}catch(e){$('#aimsg').textContent=aiErr(e)}}}
   if($('#pinsv'))$('#pinsv').onclick=()=>{const v=$('#npin').value.trim();if(!/^\d{4,6}$/.test(v)){toast('숫자 4~6자리로 넣어 주세요');return}S.master.pin=v;save();$('#npin').value='';toast('관리자 PIN을 바꿨어요')};
   if($('#reset'))$('#reset').onclick=()=>{$('#reset').outerHTML='<button class="btn block" style="background:var(--red)" id="reset2">모든 입력을 지우고 초기화</button>';
-    $('#reset2').onclick=()=>{S=seed();save();renderMain();toast('초기화했어요')}};
+    $('#reset2').onclick=()=>{if(LOCAL)S=seed();else{const ms=S.members,mst=S.master;S=cleanSeed();S.members=ms;S.master=mst}save();renderMain();toast('초기화했어요')}};
+  if($('#dvx'))$('#dvx').ontoggle=()=>{if($('#dvx').open)loadDevices()};
   if($('#admsel'))$('#admsel').onchange=e=>{S.master.member=e.target.value;save();toast(byLabel(mem(e.target.value))+'(을)를 관리자로 지정했어요');renderMain()};
 }
 function memberForm(id){
