@@ -1,6 +1,7 @@
 
 /* features/settings */
 const NOTI=[['photo','새 사진'],['chat','가족 대화'],['event','일정 알림'],['notice','공지']];
+let AITAB=null; // 설정 > AI 연결에서 보고 있는 AI
 function setView(){
   const r=me().role,adm=isAdmin(),m=me(),nb=nextBd(m),t=today0();const N=S.notify;
   return `<div class="set">
@@ -30,12 +31,14 @@ function setView(){
       <div class="field"><label for="fam">가족 이름 (AI·공지에 쓰는 이름)</label><input id="fam" value="${esc(S.family)}" maxlength="10"></div>
       <div class="field"><label for="brand">앱 상단 이름</label><input id="brand" value="${esc(S.brand||"Han's Family")}" maxlength="20"></div></div></details>
     <details><summary>AI 연결</summary><div class="in">
-      <div class="field"><label>기본 AI</label><div class="seg" id="aip">${Object.entries(AIS).map(([k,[n]])=>`<button data-v="${k}" class="${aiCfg().def===k?'on':''}">${n}</button>`).join('')}</div></div>
+      <div class="seg" id="aip">${Object.entries(AIS).map(([k,[n]])=>`<button data-v="${k}" class="${(AITAB||aiCfg().def)===k?'on':''}">${n}${aiCfg().def===k?' · 기본':''}</button>`).join('')}</div>
       ${Object.entries(AIS).map(([k,[n]])=>{const c=aiCfg(),key=(c.keys||{})[k]||'',cur=(c.models||{})[k]||'',auto=(c.auto||{})[k],list=[...new Set([...((c.lists||{})[k]||[]),...(cur?[cur]:[])])];
-        return `<div class="field"><label for="aik-${k}">${n} API 키</label><input id="aik-${k}" type="password" autocomplete="off" value="${esc(key)}" placeholder="비워 두면 사용 안 함"><div class="small muted" style="text-align:right">${keyTail(key)}</div></div>
-        <div class="field"><label for="aim-${k}">${n} 모델</label><select id="aim-${k}"><option value="">자동${auto?' ('+esc(auto)+')':' (최신 권장 모델)'}</option>${list.map(m=>`<option value="${esc(m)}" ${m===cur?'selected':''}>${esc(m)}</option>`).join('')}</select></div>`}).join('')}
-      <label class="hh"><span>키 보이기</span><input type="checkbox" id="aishow"></label>
-      <div class="row"><button class="btn" id="aisv">저장</button><button class="btn ghost" id="ailist">모델 목록 불러오기</button><button class="btn ghost" id="aitest">연결 시험</button></div>
+        return `<div class="stack aipane" data-p="${k}" ${(AITAB||c.def)===k?'':'hidden'} style="gap:10px;margin-top:10px">
+        <div class="field"><label for="aik-${k}">${n} API 키</label><input id="aik-${k}" type="password" autocomplete="off" value="${esc(key)}" placeholder="키를 붙여 넣으세요"><div class="row between small muted"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="aishow">키 보이기</label><span>${keyTail(key)}</span></div></div>
+        <div class="field"><label for="aim-${k}">${n} 모델</label><select id="aim-${k}"><option value="">자동${auto?' ('+esc(auto)+')':' (최신 권장 모델)'}</option>${list.map(m=>`<option value="${esc(m)}" ${m===cur?'selected':''}>${esc(m)}</option>`).join('')}</select></div>
+        <div class="row"><button class="btn aisv">키 저장</button><button class="btn ghost ailist">모델 목록</button><button class="btn ghost aitest">연결 시험</button></div>
+        ${c.def===k?`<div class="small muted">가족 대화의 @AI와 AI 비서가 기본으로 이 AI를 씁니다.</div>`:`<button class="chip aidef" style="align-self:flex-start">${n}를 기본 AI로 정하기</button>`}
+        </div>`}).join('')}
       <div class="small muted" id="aimsg">키는 가족 공용입니다. 한 번 넣으면 등록된 가족 폰 모두가 이 키로 AI를 씁니다.</div></div></details>
     ${!LOCAL?`<details id="dvx"><summary>초대 코드 · 등록된 폰</summary><div class="in" id="dvin"><div class="small muted">불러오는 중…</div></div></details>`:''}
     <details><summary>관리자 PIN · 초기화</summary><div class="in">
@@ -61,16 +64,18 @@ function bindSet(){
   if($('#wloc'))$('#wloc').onchange=e=>{S.weather.loc=e.target.value.trim()||S.weather.loc;save();toast('날씨 지역을 바꿨어요')};
   if($('#fam'))$('#fam').onchange=e=>{S.family=e.target.value.trim()||'우리';save();renderMain()};
   if($('#brand'))$('#brand').onchange=e=>{S.brand=e.target.value.trim();save();renderMain()};
-  if($('#aip')){let prov=aiCfg().def;segBind('#aip',v=>prov=v);
-    const collect=()=>{const c=aiCfg();c.def=prov;c.auto=c.auto||{};Object.keys(AIS).forEach(k=>{const nk=$('#aik-'+k).value.trim();if(nk!==(c.keys[k]||''))delete c.auto[k];c.keys[k]=nk;c.models=c.models||{};c.models[k]=$('#aim-'+k).value});save()};
-    const reopen=()=>{const open=[...document.querySelectorAll('.set details')].map(d=>d.open);renderMain();document.querySelectorAll('.set details').forEach((d,i)=>d.open=open[i])};
-    $('#aishow').onchange=e=>Object.keys(AIS).forEach(k=>$('#aik-'+k).type=e.target.checked?'text':'password');
-    $('#ailist').onclick=async()=>{collect();const c=aiCfg();c.lists=c.lists||{};c.auto={};const out=[];$('#aimsg').textContent='모델 목록을 불러오는 중…';
-      for(const k of Object.keys(AIS)){const key=c.keys[k];if(!key)continue;try{const l=await listModels(k,key);c.lists[k]=l.slice(0,40);c.auto[k]=pickModel(k,l);out.push(`${AIS[k][0]} ${l.length}개`)}catch(e){out.push(`${AIS[k][0]} 실패(${e.message})`)}}
-      save();reopen();$('#aimsg').textContent=out.length?out.join(' · '):'등록된 키가 없습니다'};
-    $('#aisv').onclick=()=>{collect();toast('AI 설정을 저장했어요');reopen()};
-    $('#aitest').onclick=async()=>{collect();$('#aimsg').textContent='연결 시험 중…';
-      try{const a=await callAI('한 문장으로만 답한다.',[{role:'user',text:'연결 확인. "연결되었습니다"라고만 답해.'}]);const c=aiCfg();$('#aimsg').textContent=`응답 (${(c.models||{})[c.def]||(c.auto||{})[c.def]||AI_DEF[c.def]}): ${a}`}catch(e){$('#aimsg').textContent=aiErr(e)}}}
+  if($('#aip')){const tab=()=>AITAB||aiCfg().def;
+    segBind('#aip',v=>{AITAB=v;document.querySelectorAll('.aipane').forEach(p=>p.hidden=p.dataset.p!==v);$('#aimsg').textContent=''});
+    const collect=()=>{const c=aiCfg();c.auto=c.auto||{};c.models=c.models||{};Object.keys(AIS).forEach(k=>{const nk=$('#aik-'+k).value.trim();if(nk!==(c.keys[k]||''))delete c.auto[k];c.keys[k]=nk;c.models[k]=$('#aim-'+k).value});save()};
+    const reopen=msg=>{const open=[...document.querySelectorAll('.set details')].map(d=>d.open);renderMain();document.querySelectorAll('.set details').forEach((d,i)=>d.open=open[i]);if(msg&&$('#aimsg'))$('#aimsg').textContent=msg};
+    document.querySelectorAll('.aishow').forEach(b=>b.onchange=e=>{$('#aik-'+tab()).type=e.target.checked?'text':'password'});
+    document.querySelectorAll('.aisv').forEach(b=>b.onclick=()=>{collect();const k=tab();reopen(aiCfg().keys[k]?`${AIS[k][0]} 키를 저장했어요`:`${AIS[k][0]} 키를 지웠어요`)});
+    document.querySelectorAll('.aidef').forEach(b=>b.onclick=()=>{collect();aiCfg().def=tab();save();reopen(`${AIS[tab()][0]}를 기본 AI로 정했어요`)});
+    document.querySelectorAll('.ailist').forEach(b=>b.onclick=async()=>{collect();const k=tab(),c=aiCfg(),key=c.keys[k];if(!key){$('#aimsg').textContent='먼저 키를 넣어 주세요';return}
+      $('#aimsg').textContent='모델 목록을 불러오는 중…';
+      try{const l=await listModels(k,key);c.lists=c.lists||{};c.auto=c.auto||{};c.lists[k]=l.slice(0,40);c.auto[k]=pickModel(k,l);save();reopen(`${AIS[k][0]} 모델 ${l.length}개를 불러왔어요`)}catch(e){$('#aimsg').textContent='불러오지 못했어요: '+e.message}});
+    document.querySelectorAll('.aitest').forEach(b=>b.onclick=async()=>{collect();const k=tab();$('#aimsg').textContent='연결 시험 중…';
+      try{const a=await callAI('한 문장으로만 답한다.',[{role:'user',text:'연결 확인. "연결되었습니다"라고만 답해.'}],k);const c=aiCfg();$('#aimsg').textContent=`응답 (${(c.models||{})[k]||(c.auto||{})[k]||AI_DEF[k]}): ${a}`}catch(e){$('#aimsg').textContent=aiErr(e)}})}
   if($('#pinsv'))$('#pinsv').onclick=()=>{const v=$('#npin').value.trim();if(!/^\d{4,6}$/.test(v)){toast('숫자 4~6자리로 넣어 주세요');return}S.master.pin=v;save();$('#npin').value='';toast('관리자 PIN을 바꿨어요')};
   if($('#reset'))$('#reset').onclick=()=>{$('#reset').outerHTML='<button class="btn block" style="background:var(--red)" id="reset2">모든 입력을 지우고 초기화</button>';
     $('#reset2').onclick=()=>{if(LOCAL)S=seed();else{const ms=S.members,mst=S.master;S=cleanSeed();S.members=ms;S.master=mst}save();renderMain();toast('초기화했어요')}};
