@@ -8,4 +8,4 @@ const FIREBASE_CONFIG={
   appId:"1:198487923702:web:3cad4c356dbee1363185d7"
 };
 // 웹 푸시 인증서 공개 키: Firebase 콘솔 > 프로젝트 설정 > 클라우드 메시징 > 웹 푸시 인증서
-const VAPID_KEY='';
+const VAPID_KEY='BH8XrExfD9iSzRwLmJcxHDIV7zolll6ppeR7gKI90iv_eYfvEFXl1PlqDbHP0B_cAFGLhdo9B7DIV-y82VT8hLo';
