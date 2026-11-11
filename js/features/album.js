@@ -1,8 +1,10 @@
 
 /* features/album */
 let ALBUMF=null;
-function ensureFolders(){if(S.folders)return;S.folders=[{id:'f_grand',name:'손주'},{id:'f_scene',name:'풍경'},{id:'f_meet',name:'모임'}];const map={손주:'f_grand',풍경:'f_scene',모임:'f_meet'};S.photos.forEach(p=>{p.folder=p.folder||map[p.tag]||'f_meet'});save()}
-const fname=id=>(S.folders.find(f=>f.id===id)||{name:'분류 없음'}).name;
+// 폴더는 가족이 직접 만듦. 예전 기본 폴더(손주·풍경·모임)는 사진이 없으면 정리
+function ensureFolders(){if(!S.folders)S.folders=[];if(!LOCAL&&!SYNC.live)return;if(S.foldersV===2)return;
+  const used=new Set(S.photos.map(p=>p.folder));S.folders=S.folders.filter(f=>!['f_grand','f_scene','f_meet'].includes(f.id)||used.has(f.id));S.foldersV=2;save()}
+const fname=id=>(S.folders.find(f=>f.id===id)||{name:'폴더 없음'}).name;
 function memories(list){const t=today0();return list.filter(p=>{const d=parse(p.date);return d.getFullYear()<t.getFullYear()&&d.getMonth()===t.getMonth()&&Math.abs(d.getDate()-t.getDate())<=3})}
 const canFolder=f=>f&&(f.by===ME||isAdmin());
 function albumView(){
@@ -37,11 +39,11 @@ function folderForm(f,after){const isNew=!f;
   $('#fsv').onclick=()=>{const n=$('#fn').value.trim();if(!n){toast('이름을 입력해 주세요');return}
     if(isNew){const nf={id:'f'+uid(),name:n,by:ME};S.folders.push(nf);save();toast('폴더를 만들었어요');if(after){after(nf.id);return}ALBUMF=nf.id}else{f.name=n;save()}close();renderMain()};
   if($('#fdel'))$('#fdel').onclick=()=>{$('#fdel').outerHTML='<button class="btn" style="background:var(--red)" id="fdel2">삭제 확인</button>';
-    $('#fdel2').onclick=()=>{S.photos.forEach(p=>{if(p.folder===f.id)p.folder='f_meet'});S.folders=S.folders.filter(x=>x!==f);ALBUMF=null;save();close();renderMain()}};
+    $('#fdel2').onclick=()=>{S.photos.forEach(p=>{if(p.folder===f.id)p.folder=''});S.folders=S.folders.filter(x=>x!==f);ALBUMF=null;save();close();renderMain()}};
 }
-function folderSel(cur){return `<select id="pfold">${S.folders.map(f=>`<option value="${f.id}" ${f.id===cur?'selected':''}>${esc(f.name)}</option>`).join('')}<option value="__new">+ 새 폴더 만들기</option></select>`}
+function folderSel(cur){return `<select id="pfold"><option value="" ${cur?'':'selected'}>폴더 없음 (전체 사진에만)</option>${S.folders.map(f=>`<option value="${f.id}" ${f.id===cur?'selected':''}>${esc(f.name)}</option>`).join('')}<option value="__new">+ 새 폴더 만들기</option></select>`}
 function uploadForm(img,fid){
-  fid=fid||(ALBUMF&&S.folders.some(f=>f.id===ALBUMF)?ALBUMF:S.folders[0].id);
+  fid=fid||(ALBUMF&&S.folders.some(f=>f.id===ALBUMF)?ALBUMF:'');
   sheet(`<div class="stack"><h2>사진 올리기</h2><img src="${img}" alt="" style="border-radius:12px;max-height:240px;object-fit:cover;width:100%">
     <div class="field"><label for="cap">한 줄 설명</label><input id="cap" maxlength="40" placeholder="예: 시험 끝난 날"></div>
     <div class="field"><label for="pfold">폴더</label>${folderSel(fid)}</div>
