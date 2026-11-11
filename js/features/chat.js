@@ -30,12 +30,30 @@ function attHtml(m){const f=m.file;if(m.img)return `<button class="attimg" data-
   return `<button class="attfile" data-view="${m.id}"><span class="fic">${IC.clip}</span><span><b>${esc(f.name)}</b><span class="small muted">${fsize(f.size)}</span></span></button>`}
 function chatMsgHtml(m){const mine=m.by===ME,w=whoOf(m.by);const a=m.act&&ACTS.find(x=>x[0]===m.act);
   const body=a?`<button class="actmsg" data-play="${a[0]}"><span class="ae">${a[2]}</span><span><b>${a[1]}</b><span class="small muted">눌러서 다시 보기</span></span></button>`
-    :m.sticker?`<img class="stk" src="${sticker(m.sticker)}" alt="이모티콘">`
+    :m.sticker?`<img class="stk" src="${sticker(m.sticker)}" alt="이모티콘" data-mid="${esc(m.id)}">`
     :(m.img||m.file)?attHtml(m)+(m.text?`<div class="bub ${mine?'mine':''}">${esc(m.text)}</div>`:'')
     :`<div class="bub ${mine?'mine':''} ${w.ai?'aib':''}" data-mid="${esc(m.id)}">${esc(m.text)}${m.orig?`<span class="orig">${esc(m.orig)}</span>`:''}${w.ai&&!m.wait?`<button class="tts" data-say="${esc(m.id)}">읽어 주기</button>`:''}</div>`;
-  return `<div class="cm ${mine?'mine':''}">${mine?'':`<span class="av ${w.ai?'aiav':''}" style="background:${w.color}">${w.ai?'AI':esc(w.name.slice(0,1))}</span>`}
-    <div class="cmb">${mine?'':`<span class="cmn">${esc(w.name)}</span>`}${body}<span class="cmt">${hhmm(m.ts)}</span></div></div>`}
-function postMsg(o){S.chat=S.chat||[];const m={id:uid(),by:ME,ts:Date.now(),...o};S.chat.push(m);save();return m}
+  const rq=m.reply?`<button class="rq" data-jump="${esc(m.reply.id)}"><b>${esc(whoOf(m.reply.by).name)}</b> ${esc(m.reply.t)}</button>`:'';
+  return `<div class="cm ${mine?'mine':''}" id="cm-${esc(m.id)}">${mine?'':`<span class="av ${w.ai?'aiav':''}" style="background:${w.color}">${w.ai?'AI':esc(w.name.slice(0,1))}</span>`}
+    <div class="cmb">${mine?'':`<span class="cmn">${esc(w.name)}</span>`}${rq}${body}<span class="cmt">${hhmm(m.ts)}</span></div></div>`}
+// 답장: 말풍선 메뉴에서 '답장' → 입력창 위에 원래 메시지 표시 → 보내면 인용과 함께 저장
+let CREPLY=null;
+function msgSnip(m){return m.text?m.text.replace(/\s+/g,' ').slice(0,40):m.sticker?'이모티콘':m.act?'움직이는 이모티콘':m.img?'사진':m.file?(isImg(m.file)?'사진':isVid(m.file)?'동영상':'파일'):''}
+function replyBarHtml(){return CREPLY?`<div class="rbar"><span class="rbt"><b>${esc(whoOf(CREPLY.by).name)}에게 답장</b><span class="small muted">${esc(CREPLY.t)}</span></span><button class="chip" id="rbx">취소</button></div>`:''}
+function bindReplyBar(){if($('#rbx'))$('#rbx').onclick=()=>{CREPLY=null;showReplyBar()}}
+function showReplyBar(){const el=$('#rbar');if(!el)return;el.innerHTML=replyBarHtml();bindReplyBar()}
+function setReply(id){const m=(S.chat||[]).find(x=>x.id===id);if(!m)return;CREPLY={id:m.id,by:m.by,t:msgSnip(m)};close();showReplyBar();const q=$('#kq')||$('#tq');if(q)q.focus()}
+function jumpTo(id){const el=document.getElementById('cm-'+id);if(!el){toast('예전 메시지라 화면에 없어요');return}
+  el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1400)}
+// 입력 중 표시: 입력하는 동안 3초에 한 번 알리고, 받은 쪽은 7초 안에 소식이 없으면 지움
+const TYPING={};let TYPE_T=0,TYPE_ON=false;
+function typingPing(on){if(LOCAL||!SYNC.live||!ME)return;const now=Date.now();if(on===TYPE_ON&&(!on||now-TYPE_T<3000))return;
+  TYPE_ON=on;TYPE_T=now;famRef().collection('state').doc('typing_'+ME).set({on,at:now}).catch(()=>{})}
+function typingGot(k,d){if(d&&d.on&&Math.abs(Date.now()-(d.at||0))>15000)return;TYPING[k]={on:!!(d&&d.on),rx:Date.now()};typingUi()}
+function typingText(){const now=Date.now(),ns=Object.entries(TYPING).filter(([k,v])=>k!==ME&&v.on&&now-v.rx<7000).map(([k])=>(mem(k)||{}).name).filter(Boolean);return ns.length?ns.join(', ')+' 입력 중…':''}
+function typingUi(){const el=$('#typing');if(el)el.textContent=typingText()}
+setInterval(typingUi,2000);
+function postMsg(o){S.chat=S.chat||[];if(CREPLY){o={...o,reply:CREPLY};CREPLY=null;showReplyBar()}typingPing(false);const m={id:uid(),by:ME,ts:Date.now(),...o};S.chat.push(m);save();return m}
 async function postChat(text,stk){
   postMsg(stk?{sticker:stk}:{text});
   const at=text&&text.match(/@(Gemini|GPT|Claude)/i);if(!at)return;
@@ -48,6 +66,7 @@ function talkView(){
   const fx=fxKind();
   return `<div class="talk" id="talk"><div class="row between"><h2>가족 대화</h2><button class="chip" id="fxc">효과 · ${FXS.find(x=>x[0]===pref('fx','off'))[1]}${pref('fx','off')==='auto'&&fx!=='off'?`(${FXS.find(x=>x[0]===fx)[1]})`:''}</button></div>
     <div class="clogw"><div class="clog" id="clog">${chatLogHtml()}</div><canvas class="fxc" id="fxcv"></canvas></div>
+    <div class="typing" id="typing">${typingText()}</div><div id="rbar">${replyBarHtml()}</div>
     <div class="atpick" id="atpick" hidden>${Object.entries(AIS).filter(([k])=>(aiCfg().keys||{})[k]||k===aiCfg().def).map(([k,[n,c]])=>`<button data-at="${n}"><span class="av aiav" style="background:${c}">AI</span>${n}${aiCfg().def===k?' <span class="small muted">기본</span>':''}</button>`).join('')}</div>
     <div class="emopanel" id="emop" hidden>${emoPanel()}</div>
     ${composer('k',{emoji:true,trans:false,ph:'메시지 · @로 AI 부르기',draft:DRAFT})}</div>`;
@@ -56,9 +75,11 @@ function bindTalk(){
   const talk=$('#talk');talk.style.height=Math.max(320,window.innerHeight/scale()-150)+'px';
   const box=$('#clog');box.scrollTop=box.scrollHeight;bindMsgs(box);
   startFx($('#fxcv'),fxKind());const pick=$('#atpick');
-  const c=bindComposer('k',{onInput:v=>{DRAFT=v;pick.hidden=!/@\w*$/.test(v)},onPlus:()=>{$('#emop').hidden=true},
+  bindReplyBar();
+  const c=bindComposer('k',{onInput:v=>{DRAFT=v;pick.hidden=!/@\w*$/.test(v);typingPing(!!v.trim()&&!/^@/.test(v.trim()))},onPlus:()=>{$('#emop').hidden=true},
     onSend:t=>{DRAFT='';pick.hidden=true;postChat(t);refreshChat()},
     onFile:f=>{postMsg({file:f});refreshChat()},onEmoji:()=>{$('#emop').hidden=!$('#emop').hidden},onTrans:t=>trSendSheet(t)});
+  c.q.addEventListener('blur',()=>typingPing(false));
   document.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{c.q.value=c.q.value.replace(/@\w*$/,'')+'@'+b.dataset.at+' ';DRAFT=c.q.value;pick.hidden=true;c.q.focus()});
   bindEmo(id=>{postChat('',id);$('#emop').hidden=true;refreshChat()},e=>{c.q.value+=e;DRAFT=c.q.value},id=>{postMsg({act:id});$('#emop').hidden=true;refreshChat();playAct(id)});
   $('#fxc').onclick=()=>{sheet(`<div class="stack"><h2>대화 배경 효과</h2><div class="glist2">${FXS.map(([k,n])=>`<button data-fx="${k}" class="${pref('fx','off')===k?'on':''}">${n}${k==='auto'?' <span class="small muted">(오늘 날씨·계절에 맞춤)</span>':''}</button>`).join('')}</div></div>`);
@@ -68,15 +89,18 @@ const TRM={};
 function bindMsgs(root){bindSay(root);
   root.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>playAct(b.dataset.play));
   root.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{const m=(S.chat||[]).find(x=>x.id===b.dataset.view);if(m)viewFile(m.file||{data:m.img,type:'image/jpeg',name:'사진'})});
-  root.querySelectorAll('[data-mid]').forEach(b=>b.onclick=e=>{if(e.target.closest('.tts'))return;msgMenu(b.dataset.mid)})}
-function msgMenu(id){const m=(S.chat||[]).find(x=>x.id===id);if(!m||!m.text)return;
+  root.querySelectorAll('[data-mid]').forEach(b=>b.onclick=e=>{if(e.target.closest('.tts'))return;msgMenu(b.dataset.mid)});
+  root.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>jumpTo(b.dataset.jump))}
+function msgMenu(id){const m=(S.chat||[]).find(x=>x.id===id);if(!m||m.wait)return;
+  if(!m.text){sheet(`<div class="stack"><div class="card small muted">${esc(whoOf(m.by).name)} · ${esc(msgSnip(m))}</div><div class="actions"><button class="btn" id="mrp">답장</button></div></div>`);$('#mrp').onclick=()=>setReply(id);return}
   const ko=/[가-힣]/.test(m.text),to=ko?pref('chatTr','en'):'ko',r=TRM[id+to];
   sheet(`<div class="stack"><div class="card" style="white-space:pre-wrap">${esc(m.text)}</div>
     ${ko?`<div class="row" style="gap:6px"><span class="small muted">번역할 언어</span><select id="mtl" class="chip">${LANGS.map(([c,n])=>`<option value="${c}" ${c===to?'selected':''}>${n}</option>`).join('')}</select></div>`:''}
     ${r?`<div class="tr-out"><div class="tr-t" style="font-size:17px">${esc(r.t)}</div>${r.p?`<div class="tr-p">발음 · ${esc(r.p)}</div>`:''}</div>`:''}
-    <div class="actions"><button class="btn" id="mtr">${IC.trans}${r?'다시 번역':'번역'}</button><button class="btn ghost" id="mcp">${IC.copy}복사</button><button class="btn ghost" id="mtt">${IC.spk}읽기</button></div></div>`);
+    <div class="actions"><button class="btn" id="mrp">답장</button><button class="btn ghost" id="mtr">${IC.trans}${r?'다시 번역':'번역'}</button><button class="btn ghost" id="mcp">${IC.copy}복사</button><button class="btn ghost" id="mtt">${IC.spk}읽기</button></div></div>`);
   if($('#mtl'))$('#mtl').onchange=e=>{setPref('chatTr',e.target.value);msgMenu(id)};
   $('#mtr').onclick=async()=>{$('#mtr').textContent='번역 중…';try{TRM[id+to]=await translate(m.text,ko?'ko':'auto',to);msgMenu(id)}catch(e){$('#mtr').textContent='번역';toast(aiErr(e).split('.')[0])}};
+  $('#mrp').onclick=()=>setReply(id);
   $('#mcp').onclick=()=>{try{navigator.clipboard.writeText(m.text).then(()=>toast('복사했어요'),()=>toast('복사할 수 없습니다'))}catch(e){}};
   $('#mtt').onclick=()=>speakIn(r?r.t:m.text,r?(to==='ko'?'ko-KR':lg(to)[2]):'ko-KR');
 }

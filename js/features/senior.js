@@ -108,6 +108,7 @@ function srTalk(){
     :((S.chat||[]).slice(-30).map(m=>chatMsgHtml(m)).join('')||'<div class="msg ai">가족에게 하실 말씀을 보내세요.</div>');
   return `<div class="tseg" id="tseg">${[['fam','가족 대화방'],['ai','AI 비서에게 묻기']].map(([k,n])=>`<button data-v="${k}" class="${SCHAT===k?'on':''}">${n}</button>`).join('')}</div>
     <div class="tlog" id="tlog">${log}</div>
+    ${ai?'':`<div class="typing big" id="typing">${typingText()}</div><div id="rbar">${replyBarHtml()}</div>`}
     <div class="tin"><textarea id="tq" rows="2" placeholder="여기에 글로 쓰거나, 아래 '음성 입력'을 누르세요"></textarea>
       <div class="tbtns ${ai?'':'three'}">${ai?'':'<button class="stkbig" id="tstk">이모티콘</button>'}<button class="micbig" id="tmic">${MICSVG}음성 입력</button><button class="sendbig" id="tsend">보내기</button></div></div>`;
 }
@@ -121,7 +122,8 @@ function bindSrTalk(){
     CHAT.push({role:'user',text:q},{role:'ai',text:'생각하고 있어요…',wait:true});renderSenior();
     try{const a=await callAI(aiSystem(),hist);CHAT[CHAT.length-1]={role:'ai',text:a};if(SR_TAB==='talk')renderSenior();speak(a)}
     catch(e){CHAT[CHAT.length-1]={role:'err',text:aiErr(e)};if(SR_TAB==='talk')renderSenior()}};
-  $('#tsend').onclick=send;bindMsgs(box);
+  $('#tsend').onclick=send;bindMsgs(box);bindReplyBar();
+  if(SCHAT==='fam'){$('#tq').oninput=e=>typingPing(!!e.target.value.trim());$('#tq').onblur=()=>typingPing(false)}
   if($('#tstk'))$('#tstk').onclick=()=>{sheet(`<h2>이모티콘 보내기</h2><p class="muted" style="font-size:.85em;margin:.2em 0 .6em">누르면 바로 가족 대화방에 보내집니다</p>
     <div class="sr-h2">움직이는 이모티콘</div><div class="actbig">${ACTS.map(a=>`<button data-act="${a[0]}"><span>${a[2]}</span><small>${a[1]}</small></button>`).join('')}</div>
     <div class="sr-h2">이모티콘</div><div class="stkbiggrid">${STK.map(x=>`<button data-stk="${x[0]}" aria-label="${x[1]}"><img src="${sticker(x[0])}" alt=""></button>`).join('')}</div>`,true);

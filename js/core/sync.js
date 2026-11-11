@@ -34,6 +34,7 @@ function rebuild(){COLL_KEYS.forEach(k=>{const pre=k+'~',have=new Set(Object.key
   have.forEach(ck=>out.push(SYNC.obj[ck]));S[k]=out})}
 function applyState(qs){const keys=[];
   qs.docChanges().forEach(ch=>{const id=ch.doc.id;if(ch.type==='removed')return;const d=ch.doc.data(),remote=!ch.doc.metadata.hasPendingWrites;
+    if(id.startsWith('typing_')){if(remote)typingGot(id.slice(7),d);return}
     if(id.startsWith('order_')){const oj=JSON.stringify(d.ids||[]);if(SYNC.cache[id]===oj)return;SYNC.cache[id]=oj;SYNC.order[id.slice(6)]=d.ids||[];if(remote)keys.push(id.slice(6))}
     else if(!LOCAL_KEYS.includes(id)&&SYNC.cache[id]!==d.j){SYNC.cache[id]=d.j;try{S[id]=JSON.parse(d.j)}catch(e){}if(remote)keys.push(id)}});
   SYNC.gotS=true;rebuild();changed(keys)}

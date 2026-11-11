@@ -625,3 +625,15 @@ body.dragging{user-select:none;-webkit-user-select:none}
 
 .fam-scroll>*{flex-shrink:0}
 .calls button.nophone{opacity:.5}
+
+/* 답장 인용 · 답장 입력줄 · 입력 중 표시 */
+.rq{display:block;max-width:100%;text-align:left;font-size:12px;color:var(--muted);background:transparent;border:0;border-left:3px solid var(--line);padding:2px 0 2px 8px;margin:2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rq b{color:var(--ink);font-weight:600;margin-right:4px}
+.rbar{display:flex;align-items:center;gap:10px;border-left:3px solid var(--pine);background:var(--bg);border-radius:8px;padding:6px 10px;margin:6px 0 0}
+.rbt{flex:1;min-width:0;display:flex;flex-direction:column}
+.rbt .small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.typing{min-height:18px;font-size:12px;color:var(--muted);padding:2px 4px}
+.typing.big{font-size:16px;min-height:22px}
+.cm.flash .bub,.cm.flash .stk{outline:2px solid var(--pine);outline-offset:2px;transition:outline-color .3s}
+.tlog .rq{font-size:.8em}
+.tlog .rq b{font-size:1em}
