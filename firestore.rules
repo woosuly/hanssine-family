@@ -24,6 +24,10 @@ service cloud.firestore {
       allow create: if signed() && !exists(invitePath())
         && request.resource.data.code is string && request.resource.data.code.size() >= 4;
     }
+    // 긴급 연락 기록: 등록된 폰만 남김 (서버가 알림 발송)
+    match /families/hanssine/alerts/{id} {
+      allow read, create: if member();
+    }
     // 폰 등록: 초대 코드가 맞아야 등록. 관리자는 등록 해제 가능
     match /families/hanssine/devices/{uid} {
       allow read: if member() || (signed() && request.auth.uid == uid);

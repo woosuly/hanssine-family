@@ -76,8 +76,9 @@ function seniorSettings(){
     <h2>홈 배경 사진</h2><img src="${srBg()}" alt="" class="bgprev">
     <div class="actions"><button class="btn" id="bgpick">사진첩에서 고르기</button><button class="btn ghost" id="bgup">휴대폰 사진</button></div>
     <input type="file" id="bgfile" accept="image/*" hidden>
+    ${!LOCAL?`<h2>알림</h2>${pushRowHtml()}`:''}
     <button class="btn ghost block" id="chg">사용자 변경 (관리자)</button></div>`,true);
-  bindFs(()=>{renderSenior();seniorSettings()});$('#chg').onclick=pinSheet;
+  bindFs(()=>{renderSenior();seniorSettings()});$('#chg').onclick=pinSheet;bindPushRow(seniorSettings);
   $('#bgup').onclick=()=>$('#bgfile').click();
   $('#bgfile').onchange=async e=>{const f=e.target.files[0];if(!f)return;const x=await prepFile(f);if(x){setPref('bg',x.data);toast('홈 배경으로 정했어요');seniorSettings()}};
   $('#bgpick').onclick=()=>{sheet(`<h2>배경으로 쓸 사진을 고르세요</h2><div class="bggrid">${allPhotos().map(p=>`<button data-bg="${p.id}"><img src="${p.img}" alt=""></button>`).join('')}</div>`,true,seniorSettings);
@@ -94,9 +95,10 @@ function sosSheet(){
     <div class="card" style="padding:.4em .8em">${to.map(x=>`<div class="mini" style="font-size:.95em"><span>${esc(x.name)}</span><span class="num muted">${esc(x.phone)}</span></div>`).join('')||'<span class="muted">등록된 연락처가 없습니다. 자녀 설정에서 지정합니다.</span>'}</div>
     <a class="sosgo" id="go" href="${href}">지금 문자 보내기</a>
     <a class="sos119" href="tel:119">119에 전화</a>
-    <p class="muted" style="font-size:.75em;margin:0">시제품은 문자 앱을 열어 보냅니다. 실제 앱은 버튼 한 번에 서버에서 자동 발송하고, 받은 사람들 앱에도 긴급 알림이 뜹니다.</p>
+    <p class="muted" style="font-size:.75em;margin:0">문자 앱이 열리면 보내기를 눌러 주세요. 가족들 앱에도 긴급 알림이 갑니다.</p>
     <button class="bigclose" id="cl">취소</button></div>`,true);
-  $('#go').onclick=()=>{S.sos=S.sos||[];S.sos.push({by:ME,at:new Date().toISOString()});save();toast('긴급 문자를 보냅니다')};
+  $('#go').onclick=()=>{S.sos=S.sos||[];S.sos.push({by:ME,at:new Date().toISOString()});save();
+    if(!LOCAL)famRef().collection('alerts').add({type:'sos',by:ME,ts:Date.now()}).catch(e=>console.warn(e));toast('긴급 문자를 보냅니다')};
   if($('#cl'))$('#cl').onclick=close;
 }
 function srTalk(){

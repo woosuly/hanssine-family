@@ -60,7 +60,7 @@ function startListen(){stopSync();return new Promise(res=>{const done=()=>{if(SY
   SYNC.unsub.push(famRef().collection('state').onSnapshot(qs=>{applyState(qs);done()},lostAccess));
   SYNC.unsub.push(famRef().collection('items').onSnapshot(qs=>{applyItems(qs);done()},lostAccess))})}
 function finishBoot(){if(!SYNC.cache.master){const keep=S.trPacks;S=cleanSeed();S.trPacks=keep||{};S.master.member=ME;flush()}
-  SYNC.booted=true;render()}
+  SYNC.booted=true;render();pushAfterBoot()}
 
 async function boot(){
   if(LOCAL){render();return}
@@ -83,7 +83,7 @@ async function joinAs(mid,phone,code){
   ME=mid;if(!SYNC.live)await startListen();
   if(!SYNC.cache.master){finishBoot()}else{SYNC.booted=true}
   const m=mem(mid);if(m&&m.phone!==phone){m.phone=phone;save()}
-  render()}
+  render();pushRegister(false)}
 
 // 관리자: 초대 코드 · 등록된 폰
 async function loadDevices(){const box=$('#dvin');if(!box)return;

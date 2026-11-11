@@ -10,7 +10,7 @@ function setView(){
     <details><summary>내 화면</summary><div class="in"><div class="field"><label>글씨 크기</label>${fsSeg()}</div>
       <div class="field"><label>화면 모드</label><div class="seg" id="thseg">${THEMES.map(([k,n])=>`<button data-v="${k}" class="${pref('theme','system')===k?'on':''}">${n}</button>`).join('')}</div></div>
       <div class="field"><label>스킨</label><div class="swatches">${SKINS.map(([k,n,c])=>`<button class="sw ${pref('skin','forest')===k?'on':''}" data-skin="${k}"><i style="background:${c}"></i>${n}</button>`).join('')}</div></div></div></details>
-    <details><summary>내 알림</summary><div class="in">${NOTI.map(([k,n])=>`<label class="hh"><span>${n}</span><input type="checkbox" data-mynoti="${k}" ${pref('noti_'+k,true)?'checked':''}></label>`).join('')}
+    <details><summary>내 알림</summary><div class="in">${pushRowHtml()}${NOTI.map(([k,n])=>`<label class="hh"><span>${n}</span><input type="checkbox" data-mynoti="${k}" ${pref('noti_'+k,true)?'checked':''}></label>`).join('')}
       <div class="small muted">아이폰은 홈 화면에 추가해야 알림을 받습니다.</div></div></details>
     <details><summary>이 휴대폰</summary><div class="in"><div>이 폰은 <b>${esc(byLabel(m))}</b> 폰으로 정해져 있습니다.</div><button class="btn ghost block" id="chg">사용자 변경 (관리자 PIN)</button></div></details>
     ${adm?`<div class="set-h">관리자</div>
@@ -52,6 +52,7 @@ function bindSet(){
   document.querySelectorAll('[data-skin]').forEach(b=>b.onclick=()=>{setPref('skin',b.dataset.skin);applyTheme();document.querySelectorAll('[data-skin]').forEach(x=>x.classList.toggle('on',x===b))});
   document.querySelectorAll('[data-mynoti]').forEach(c=>c.onchange=()=>setPref('noti_'+c.dataset.mynoti,c.checked));
   $('#chg').onclick=pinSheet;
+  bindPushRow(()=>{const open=[...document.querySelectorAll('.set details')].map(d=>d.open);renderMain();document.querySelectorAll('.set details').forEach((d,i)=>d.open=open[i])});
   document.querySelectorAll('[data-sos]').forEach(c=>c.onchange=()=>{S.emergency=[...document.querySelectorAll('[data-sos]:checked')].map(x=>x.dataset.sos);save()});
   if($('#smsP')){$('#smsP').onchange=e=>{S.notify.smsParents=e.target.checked;save()};document.querySelectorAll('[data-ni]').forEach(c=>c.onchange=()=>{S.notify.items[c.dataset.ni]=c.checked;save()})}
   if($('#tre'))$('#tre').onchange=e=>{S.dues.treasurer=e.target.value;save();toast(e.target.value?'총무를 '+HOUSES[e.target.value]+'(으)로 바꿨어요':'총무를 미정으로 바꿨어요')};
