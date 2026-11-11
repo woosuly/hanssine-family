@@ -72,8 +72,12 @@ async function boot(){
     try{await DB.enablePersistence({synchronizeTabs:true})}catch(e){}
     const c=await firebase.auth().signInAnonymously();SYNC.uid=c.user.uid}
   catch(e){console.warn(e);$('#app').innerHTML='<div class="wrap" style="padding-top:30vh;text-align:center"><p>연결하지 못했어요.<br>인터넷 연결을 확인한 뒤 다시 열어 주세요.</p><button class="btn" onclick="location.reload()">다시 시도</button></div>';return}
-  try{const d=await famRef().collection('devices').doc(SYNC.uid).get();if(d.exists)SYNC.dev=d.data()}catch(e){}
+  // 등록 정보 확인. 연결이 불안정해 확인에 실패하면 이 폰에 기억해 둔 등록 정보로 진행
+  const DK='hanssine-dev-'+SYNC.uid;let failed=false;
+  try{const d=await famRef().collection('devices').doc(SYNC.uid).get();if(d.exists)SYNC.dev=d.data()}catch(e){failed=true;console.warn('device',e)}
+  if(!SYNC.dev&&failed){try{SYNC.dev=JSON.parse(localStorage.getItem(DK))}catch(e){}}
   if(!SYNC.dev){renderWho();return}
+  try{localStorage.setItem(DK,JSON.stringify({member:SYNC.dev.member}))}catch(e){}
   ME=SYNC.dev.member;await startListen();finishBoot()}
 
 // 가입: 초대 코드 확인 → 이 폰 등록. 초대 코드가 아직 없으면(첫 설치) 입력한 코드가 가족 초대 코드가 됨
@@ -83,6 +87,7 @@ async function joinAs(mid,phone,code){
   else{const dev={member:mid,phone,code,ts:Date.now(),ua:navigator.userAgent.slice(0,120)};
     try{await dref.set(dev)}catch(e){const b=DB.batch();b.set(iref,{code});b.set(dref,dev);await b.commit()}
     SYNC.dev=dev}
+  try{localStorage.setItem('hanssine-dev-'+SYNC.uid,JSON.stringify({member:mid}))}catch(e){}
   ME=mid;if(!SYNC.live)await startListen();
   if(!SYNC.cache.master){finishBoot()}else{SYNC.booted=true}
   const m=mem(mid);if(m&&m.phone!==phone){m.phone=phone;save()}

@@ -1,9 +1,10 @@
 
 /* core/ai */
-const AI_DEF={gemini:'gemini-2.5-flash',openai:'gpt-4.1-mini',claude:'claude-sonnet-4-5'};
+// 목록을 못 불러올 때만 쓰는 예비값
+const AI_DEF={gemini:'gemini-2.5-flash',openai:'gpt-4.1-mini',claude:'claude-sonnet-5-5'};
 async function callAI(system,msgs,prov,img){
   const c=aiCfg();const provider=prov||c.def,key=(c.keys||{})[provider],model=(c.models||{})[provider];if(!key)throw new Error('NOKEY:'+provider);
-  const mdl=model||AI_DEF[provider];let res,j;const last=msgs.length-1;
+  const mdl=model||await autoModel(provider,key);let res,j;const last=msgs.length-1;
   const im=img?{mime:img.slice(5,img.indexOf(';')),b64:img.slice(img.indexOf(',')+1)}:null;
   const txt=m=>m.text||'이 이미지를 보고 판단해 줘';
   if(provider==='gemini'){
@@ -41,5 +42,21 @@ function aiContext(pub){const vis=x=>pub?x.scope==='all':canSee(x);
   return L.join('\n');
 }
 function aiSystem(pub){return `너는 '${S.family}' 가족 앱의 AI 비서다.${pub?' 지금은 가족 단체 대화방에서 호출되었고, 대화 기록 중 마지막 질문에 답한다. 답은 가족 모두가 본다.':''} 가족 질문은 아래 데이터만 근거로 짧고 쉬운 한국어로 답한다. 데이터에 없는 가족 정보는 모른다고 말한다. 일반 질문(요리, 생활, 여행, 상식)은 일반 지식으로 답하되, 건강·약 관련은 일반 정보만 말하고 담당 의사 상담을 권한다. ${isSenior()?'질문자는 70대 어르신이므로 3문장 이내, 존댓말로 아주 쉽게 답한다.':'답은 5문장 이내로 한다.'}\n\n${aiContext(pub)}`}
+// 키로 실제 쓸 수 있는 모델 목록 (최신순)
+async function listModels(prov,key){let r,j;
+  if(prov==='gemini'){r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${encodeURIComponent(key)}`);j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);
+    const ver=n=>parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/)||[])[1]||0);
+    return (j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')&&/^models\/gemini/.test(m.name)&&!/embedding|tts|image|audio|live|aqa|robotics|computer/.test(m.name)).map(m=>m.name.slice(7)).sort((a,b)=>ver(b)-ver(a))}
+  if(prov==='openai'){r=await fetch('https://api.openai.com/v1/models',{headers:{Authorization:'Bearer '+key}});j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);
+    return (j.data||[]).sort((a,b)=>(b.created||0)-(a.created||0)).map(m=>m.id).filter(id=>/^(gpt-|o\d|chatgpt)/.test(id)&&!/audio|realtime|tts|transcribe|image|search|embedding|instruct|codex|moderation/.test(id))}
+  r=await fetch('https://api.anthropic.com/v1/models?limit=100',{headers:{'x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}});j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);
+  return (j.data||[]).map(m=>m.id)}
+// 목록에서 일상 대화에 알맞은 모델 고르기: Gemini는 flash, GPT는 mini, Claude는 sonnet 중 최신
+function pickModel(prov,list){const clean=list.filter(x=>!/preview|exp|lite|nano|-\d{4}-\d{2}-\d{2}$/.test(x));const want={gemini:/flash/,openai:/^gpt-.*mini/,claude:/sonnet/}[prov];
+  return clean.find(x=>want.test(x))||list.find(x=>want.test(x))||clean[0]||list[0]||AI_DEF[prov]}
+// 모델을 정하지 않았으면 처음 한 번 목록을 받아 자동으로 정함
+async function autoModel(prov,key){const c=aiCfg();c.auto=c.auto||{};if(c.auto[prov])return c.auto[prov];
+  try{const l=await listModels(prov,key);c.lists=c.lists||{};c.lists[prov]=l.slice(0,40);c.auto[prov]=pickModel(prov,l);save();return c.auto[prov]}catch(e){return AI_DEF[prov]}}
+const keyTail=k=>k?'입력됨 · 끝자리 '+k.slice(-4):'미입력';
 const AIS={gemini:['Gemini','#4C7BD9'],openai:['GPT','#2F8F74'],claude:['Claude','#C46A3D']};
 function aiCfg(){const a=S.ai||{};if(!a.keys)S.ai={def:a.provider||'gemini',keys:{[a.provider||'gemini']:a.key||''},models:{}};return S.ai}

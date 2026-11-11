@@ -9,7 +9,7 @@ function renderWho(){
     <div class="who parents">${parents.map(m=>`<button data-me="${m.id}">${av(m)}<span>${esc(m.name)}</span></button>`).join('')}</div>
     <div class="sec"><h2>자녀·손주</h2>
     <div class="who">${others.map(m=>`<button data-me="${m.id}">${av(m)}<span>${esc(m.name)}</span><span class="small muted">${HOUSES[m.house]}</span></button>`).join('')}</div></div>
-    <p class="small muted" style="margin-top:24px">부모님 폰은 자녀가 대신 설정해 드립니다. ${LOCAL?'시제품 모드: 데이터가 이 기기에만 저장되고, 관리자 PIN은 0000입니다.':'처음 등록할 때 가족 초대 코드가 필요합니다.'}</p>
+    <p class="small muted" style="margin-top:24px">부모님 폰은 자녀가 대신 설정해 드립니다. ${LOCAL?'시제품 모드: 데이터가 이 기기에만 저장되고, 관리자 PIN은 0000입니다.':'처음 등록할 때 가족 초대 코드가 필요합니다. 이미 등록했는데 이 화면이 보이면 다른 브라우저나 새로 설치한 앱으로 연 경우예요. 같은 이름으로 다시 등록하면 됩니다.'}</p>
   </div>`;
   document.querySelectorAll('[data-me]').forEach(b=>b.onclick=()=>{const m=mem(b.dataset.me);
     sheet(`<div class="stack">${av(m,'')}<h2>이 휴대폰을 ${esc(m.name)} 폰으로 정할까요?</h2>

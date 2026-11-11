@@ -31,10 +31,12 @@ function setView(){
       <div class="field"><label for="brand">앱 상단 이름</label><input id="brand" value="${esc(S.brand||"Han's Family")}" maxlength="20"></div></div></details>
     <details><summary>AI 연결</summary><div class="in">
       <div class="field"><label>기본 AI</label><div class="seg" id="aip">${Object.entries(AIS).map(([k,[n]])=>`<button data-v="${k}" class="${aiCfg().def===k?'on':''}">${n}</button>`).join('')}</div></div>
-      ${Object.entries(AIS).map(([k,[n]])=>`<div class="field"><label for="aik-${k}">${n} API 키</label><input id="aik-${k}" type="password" autocomplete="off" value="${esc((aiCfg().keys||{})[k]||'')}" placeholder="비워 두면 사용 안 함"></div>
-        <div class="field"><label for="aim-${k}">${n} 모델</label><input id="aim-${k}" value="${esc((aiCfg().models||{})[k]||'')}" placeholder="${AI_DEF[k]}"></div>`).join('')}
-      <div class="row"><button class="btn" id="aisv">저장</button><button class="btn ghost" id="aitest">연결 시험</button></div>
-      <div class="small muted" id="aimsg">키는 등록된 가족 폰에서만 읽을 수 있습니다. 서버 보관은 다음 단계에서 적용합니다.</div></div></details>
+      ${Object.entries(AIS).map(([k,[n]])=>{const c=aiCfg(),key=(c.keys||{})[k]||'',cur=(c.models||{})[k]||'',auto=(c.auto||{})[k],list=[...new Set([...((c.lists||{})[k]||[]),...(cur?[cur]:[])])];
+        return `<div class="field"><label for="aik-${k}">${n} API 키</label><input id="aik-${k}" type="password" autocomplete="off" value="${esc(key)}" placeholder="비워 두면 사용 안 함"><div class="small muted" style="text-align:right">${keyTail(key)}</div></div>
+        <div class="field"><label for="aim-${k}">${n} 모델</label><select id="aim-${k}"><option value="">자동${auto?' ('+esc(auto)+')':' (최신 권장 모델)'}</option>${list.map(m=>`<option value="${esc(m)}" ${m===cur?'selected':''}>${esc(m)}</option>`).join('')}</select></div>`}).join('')}
+      <label class="hh"><span>키 보이기</span><input type="checkbox" id="aishow"></label>
+      <div class="row"><button class="btn" id="aisv">저장</button><button class="btn ghost" id="ailist">모델 목록 불러오기</button><button class="btn ghost" id="aitest">연결 시험</button></div>
+      <div class="small muted" id="aimsg">키는 가족 공용입니다. 한 번 넣으면 등록된 가족 폰 모두가 이 키로 AI를 씁니다.</div></div></details>
     ${!LOCAL?`<details id="dvx"><summary>초대 코드 · 등록된 폰</summary><div class="in" id="dvin"><div class="small muted">불러오는 중…</div></div></details>`:''}
     <details><summary>관리자 PIN · 초기화</summary><div class="in">
       <div class="row" style="flex-wrap:nowrap"><div class="field" style="flex:1"><label for="npin">새 PIN</label><input id="npin" type="password" inputmode="numeric" maxlength="6"></div><button class="btn" id="pinsv" style="align-self:flex-end">변경</button></div>
@@ -60,10 +62,15 @@ function bindSet(){
   if($('#fam'))$('#fam').onchange=e=>{S.family=e.target.value.trim()||'우리';save();renderMain()};
   if($('#brand'))$('#brand').onchange=e=>{S.brand=e.target.value.trim();save();renderMain()};
   if($('#aip')){let prov=aiCfg().def;segBind('#aip',v=>prov=v);
-    const collect=()=>{const c=aiCfg();c.def=prov;Object.keys(AIS).forEach(k=>{c.keys[k]=$('#aik-'+k).value.trim();c.models=c.models||{};c.models[k]=$('#aim-'+k).value.trim()});save()};
-    $('#aisv').onclick=()=>{collect();toast('AI 설정을 저장했어요')};
+    const collect=()=>{const c=aiCfg();c.def=prov;c.auto=c.auto||{};Object.keys(AIS).forEach(k=>{const nk=$('#aik-'+k).value.trim();if(nk!==(c.keys[k]||''))delete c.auto[k];c.keys[k]=nk;c.models=c.models||{};c.models[k]=$('#aim-'+k).value});save()};
+    const reopen=()=>{const open=[...document.querySelectorAll('.set details')].map(d=>d.open);renderMain();document.querySelectorAll('.set details').forEach((d,i)=>d.open=open[i])};
+    $('#aishow').onchange=e=>Object.keys(AIS).forEach(k=>$('#aik-'+k).type=e.target.checked?'text':'password');
+    $('#ailist').onclick=async()=>{collect();const c=aiCfg();c.lists=c.lists||{};c.auto={};const out=[];$('#aimsg').textContent='모델 목록을 불러오는 중…';
+      for(const k of Object.keys(AIS)){const key=c.keys[k];if(!key)continue;try{const l=await listModels(k,key);c.lists[k]=l.slice(0,40);c.auto[k]=pickModel(k,l);out.push(`${AIS[k][0]} ${l.length}개`)}catch(e){out.push(`${AIS[k][0]} 실패(${e.message})`)}}
+      save();reopen();$('#aimsg').textContent=out.length?out.join(' · '):'등록된 키가 없습니다'};
+    $('#aisv').onclick=()=>{collect();toast('AI 설정을 저장했어요');reopen()};
     $('#aitest').onclick=async()=>{collect();$('#aimsg').textContent='연결 시험 중…';
-      try{const a=await callAI('한 문장으로만 답한다.',[{role:'user',text:'연결 확인. "연결되었습니다"라고만 답해.'}]);$('#aimsg').textContent='응답: '+a}catch(e){$('#aimsg').textContent=aiErr(e)}}}
+      try{const a=await callAI('한 문장으로만 답한다.',[{role:'user',text:'연결 확인. "연결되었습니다"라고만 답해.'}]);const c=aiCfg();$('#aimsg').textContent=`응답 (${(c.models||{})[c.def]||(c.auto||{})[c.def]||AI_DEF[c.def]}): ${a}`}catch(e){$('#aimsg').textContent=aiErr(e)}}}
   if($('#pinsv'))$('#pinsv').onclick=()=>{const v=$('#npin').value.trim();if(!/^\d{4,6}$/.test(v)){toast('숫자 4~6자리로 넣어 주세요');return}S.master.pin=v;save();$('#npin').value='';toast('관리자 PIN을 바꿨어요')};
   if($('#reset'))$('#reset').onclick=()=>{$('#reset').outerHTML='<button class="btn block" style="background:var(--red)" id="reset2">모든 입력을 지우고 초기화</button>';
     $('#reset2').onclick=()=>{if(LOCAL)S=seed();else{const ms=S.members,mst=S.master;S=cleanSeed();S.members=ms;S.master=mst}save();renderMain();toast('초기화했어요')}};
