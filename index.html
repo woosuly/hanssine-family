@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>한씨네 가족 앱</title>
+<meta name="theme-color" content="#2E6A4E">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="한씨네">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.8/lunar.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<div id="layer"></div>
+<script src="js/core/util.js"></script>
+<script src="js/core/sample-art.js"></script>
+<script src="js/core/data.js"></script>
+<script src="js/core/ui.js"></script>
+<script src="js/core/voice.js"></script>
+<script src="js/core/ai.js"></script>
+<script src="js/core/weather.js"></script>
+<script src="js/features/stickers.js"></script>
+<script src="js/features/chat.js"></script>
+<script src="js/features/calendar.js"></script>
+<script src="js/features/dues.js"></script>
+<script src="js/features/bot.js"></script>
+<script src="js/features/translate.js"></script>
+<script src="js/features/exercise.js"></script>
+<script src="js/features/games.js"></script>
+<script src="js/features/album.js"></script>
+<script src="js/features/senior.js"></script>
+<script src="js/features/home.js"></script>
+<script src="js/features/settings.js"></script>
+<script src="js/features/auth.js"></script>
+<script src="js/main.js"></script>
+<script>
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+/* 색·글꼴 토큰 (라이트/다크, 스킨) */
+/* 기본 재설정 (아티팩트 미리보기 기본값과 동일하게) */
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+[hidden]{display:none!important}
+:root{
+  --bg:#F3F5F1; --surface:#FFFFFF; --ink:#1D2822; --muted:#5D6A62; --line:#DCE2DA;
+  --pine:#2E6A4E; --pine-ink:#FFFFFF; --pine-soft:#E2EDE6; --sun:#B9771F; --sun-soft:#F6EBDA; --red:#BF3F2B;
+  --shadow:0 1px 2px rgba(20,40,30,.06),0 4px 14px rgba(20,40,30,.06);
+  --f-body:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-title:"Gowun Batang","Noto Serif KR",serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111713; --surface:#19211C; --ink:#E6EDE8; --muted:#98A69D; --line:#2B3630;
+  --pine:#6DB58F; --pine-ink:#0E1A13; --pine-soft:#1E3127; --sun:#E0A24A; --sun-soft:#3A2D19; --red:#EE7B66;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111713; --surface:#19211C; --ink:#E6EDE8; --muted:#98A69D; --line:#2B3630;
+  --pine:#6DB58F; --pine-ink:#0E1A13; --pine-soft:#1E3127; --sun:#E0A24A; --sun-soft:#3A2D19; --red:#EE7B66;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark}
+
+/* v4: 스킨 (자녀·손주) */
+:root[data-skin="sea"]{--pine:#2D5F8B;--pine-soft:#E1EAF3}
+:root[data-skin="sunset"]{--pine:#B4532A;--pine-soft:#F6E5DB}
+:root[data-skin="lavender"]{--pine:#6A55A3;--pine-soft:#ECE7F5}
+:root[data-skin="ink"]{--pine:#3B4148;--pine-soft:#E6E8EA}
+@media (prefers-color-scheme:dark){
+  :root[data-skin="sea"]:not([data-theme="light"]){--pine:#7FB0DD;--pine-soft:#1B2B3A}
+  :root[data-skin="sunset"]:not([data-theme="light"]){--pine:#E89A6E;--pine-soft:#3A2419}
+  :root[data-skin="lavender"]:not([data-theme="light"]){--pine:#B4A3E0;--pine-soft:#2A2340}
+  :root[data-skin="ink"]:not([data-theme="light"]){--pine:#C9CED4;--pine-soft:#2A2E33}}
+:root[data-theme="dark"][data-skin="sea"]{--pine:#7FB0DD;--pine-soft:#1B2B3A}
+:root[data-theme="dark"][data-skin="sunset"]{--pine:#E89A6E;--pine-soft:#3A2419}
+:root[data-theme="dark"][data-skin="lavender"]{--pine:#B4A3E0;--pine-soft:#2A2340}
+:root[data-theme="dark"][data-skin="ink"]{--pine:#C9CED4;--pine-soft:#2A2E33}
+:root{--well:#E9EDE7;--raise:0 1px 2px rgba(20,40,30,.06),0 4px 12px rgba(20,40,30,.07);--inset:inset 0 1px 3px rgba(20,40,30,.12)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--well:#0B100D;--raise:0 1px 2px rgba(0,0,0,.45),0 4px 12px rgba(0,0,0,.3);--inset:inset 0 1px 3px rgba(0,0,0,.6)}}
+:root[data-theme="dark"]{--well:#0B100D;--raise:0 1px 2px rgba(0,0,0,.45),0 4px 12px rgba(0,0,0,.3);--inset:inset 0 1px 3px rgba(0,0,0,.6)}
+:root{--voice:#2F5FA8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--voice:#6F9BE0}}
+:root[data-theme="dark"]{--voice:#6F9BE0}
