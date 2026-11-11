@@ -59,7 +59,10 @@ function lostAccess(e){console.warn('listen',e);if(e&&e.code==='permission-denie
 function startListen(){stopSync();return new Promise(res=>{const done=()=>{if(SYNC.gotS&&SYNC.gotI&&!SYNC.live){SYNC.live=true;res()}};
   SYNC.unsub.push(famRef().collection('state').onSnapshot(qs=>{applyState(qs);done()},lostAccess));
   SYNC.unsub.push(famRef().collection('items').onSnapshot(qs=>{applyItems(qs);done()},lostAccess))})}
-function finishBoot(){if(!SYNC.cache.master){const keep=S.trPacks;S=cleanSeed();S.trPacks=keep||{};S.master.member=ME;flush()}
+// 초기 버전이 넣어 둔 회비 기본값(월 5만 원·총무 큰딸네)이 손대지 않은 채 남아 있으면 '미정'으로 되돌림
+function fixOldDues(){const d=S.dues;if(!d)return;const untouched=!(d.tx||[]).length&&!(d.accounts||[]).length&&!Object.values(d.paid||{}).some(m=>Object.values(m||{}).some(Boolean));
+  if(untouched&&d.mode==='monthly'&&d.monthly===50000&&d.treasurer==='h1'){S.dues={mode:'',monthly:0,perHouse:{},treasurer:'',paid:{},accounts:[],tx:[]};save()}}
+function finishBoot(){if(!SYNC.cache.master){const keep=S.trPacks;S=cleanSeed();S.trPacks=keep||{};S.master.member=ME;flush()}else fixOldDues();
   SYNC.booted=true;render();pushAfterBoot()}
 
 async function boot(){
