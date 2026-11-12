@@ -1,5 +1,5 @@
 /* core/push — 웹 푸시 알림: 이 폰 알림 켜기, 알림 받을 주소(토큰) 저장, 알림 눌러 해당 화면 열기 */
-const NATIVE_PUSH=()=>!LOCAL&&!!NPLUG('PushNotifications');let NSTATE='default';
+const NATIVE_PUSH=()=>!LOCAL&&!!NPLUG('PushNotifications');let NSTATE='checking'; // 앱이 켜질 때 권한을 확인하기 전까지는 '알림 켜기' 안내를 띄우지 않음
 const PUSH_OK=()=>NATIVE_PUSH()||!LOCAL&&!!VAPID_KEY&&'Notification' in window&&'serviceWorker' in navigator&&'PushManager' in window&&typeof firebase!=='undefined'&&!!firebase.messaging;
 const pushState=()=>NATIVE_PUSH()?NSTATE:!PUSH_OK()?'unsupported':Notification.permission; // granted · denied · default · unsupported
 const isIOS=()=>/iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -48,7 +48,7 @@ function openFromPush(k,id){if(!ME||!mem(ME))return;close();
 const PUSH_OPEN=(location.search.match(/[?&]open=([a-z]+)/)||[])[1]||'',PUSH_RID=(location.search.match(/[?&]rid=([\w-]+)/)||[])[1]||'';
 function pushAfterBoot(){nativeAfterBoot();
   if(PUSH_OPEN){openFromPush(PUSH_OPEN,PUSH_RID);try{history.replaceState(null,'',location.pathname)}catch(e){}}
-  pushRegister(false);clearNotis()}
+  pushRegister(false).then(r=>{if(r==='default'&&NATIVE_PUSH()&&TAB==='home'&&$('#wx')&&!busy())renderMain()});clearNotis()}
 // 앱을 열면 쌓인 알림 정리
 function clearNotis(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.ready.then(r=>r.getNotifications()).then(ns=>ns.forEach(n=>n.close())).catch(()=>{})}
 if('serviceWorker' in navigator){navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type==='open')openFromPush(d.k,d.id)});
