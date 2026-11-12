@@ -4,7 +4,7 @@ const MICSVG='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" widt
 function toast(msg){const el=document.createElement('div');el.className='toast';el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),2400)}
 function sheet(html,full,back){BACK=back||null;$('#layer').innerHTML=`<div class="dim" id="dim"><div class="sheet ${full?'full':''}" role="dialog"><div class="shead"><button class="back" id="sback">${BACKSVG}<span>뒤로</span></button></div>${html}</div></div>`;
   $('#dim').addEventListener('click',e=>{if(e.target.id==='dim')goBack()});$('#sback').onclick=goBack}
-function close(){stopListen();$('#layer').innerHTML='';if(!LOCAL)syncAfterClose()}
+function close(){stopListen();try{trWake(false)}catch(e){}$('#layer').innerHTML='';if(!LOCAL)syncAfterClose()}
 const FS=[[1,'보통'],[1.15,'크게'],[1.3,'아주 크게']];
 function scale(){return ((S.prefs||{})[ME]||{}).fs||1}
 function applyScale(){applyTheme();const k=scale();

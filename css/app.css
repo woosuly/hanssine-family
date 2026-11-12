@@ -759,3 +759,14 @@ body.kbopen .tabbar{display:none}
 .g48 .t1024,.g48 .t2048,.g48 .t4096{background:#EDC22E;color:#fff;font-size:1.05em}
 .g48k{display:grid;grid-template-columns:repeat(3,56px);gap:6px;justify-content:center;margin-top:.6em}
 .g48k button{height:48px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:18px}
+
+/* 번역 보강 */
+.menuc{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.mitem{display:flex;flex-direction:column;gap:4px}
+.mtags{display:flex;flex-wrap:wrap;gap:4px}
+.mtags i{font-style:normal;font-size:11px;font-weight:700;color:var(--red);border:1px solid currentColor;border-radius:6px;padding:0 6px}
+.trlog{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.trl{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 10px}
+.trl.ot{background:var(--pine-soft);border-color:transparent}
+.pc.hear{background:var(--pine-soft)}
+.phrq{display:flex;flex-direction:column;gap:8px}

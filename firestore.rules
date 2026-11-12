@@ -18,6 +18,10 @@ service cloud.firestore {
     match /families/hanssine/items/{id} {
       allow read, write: if member();
     }
+    // 번역 상황별 문장(가족 공유)
+    match /families/hanssine/phr/{id} {
+      allow read, write: if member();
+    }
     // 놀이 대결(빙고): 가족 누구나
     match /families/hanssine/games/{id} {
       allow read, write: if member();

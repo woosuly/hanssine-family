@@ -10,7 +10,7 @@ function tabs(){return [['home','홈'],['cal','일정'],['album','앨범'],['tal
 const SUBPAGES={set:'설정'};
 let PREV_TAB='home';
 function renderMain(){
-  document.body.classList.remove('senior');applyScale();stopFx();
+  document.body.classList.remove('senior');applyScale();stopFx();try{if(TAB!=='trans')trWake(false)}catch(e){}
   const m=me();
   if(TAB==='dues'&&!isDaughter())TAB='home';
   const sub=SUBPAGES[TAB];
