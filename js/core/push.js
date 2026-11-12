@@ -39,3 +39,7 @@ function pushAfterBoot(){
 function clearNotis(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.ready.then(r=>r.getNotifications()).then(ns=>ns.forEach(n=>n.close())).catch(()=>{})}
 if('serviceWorker' in navigator){navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type==='open')openFromPush(d.k,d.id)});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&SYNC.booted)clearNotis()})}
+// 서비스 워커에 화면이 보이는지 알림 (보이는 중엔 알림 대신 앱 안에서 진동·소리)
+function reportVis(){try{const c=navigator.serviceWorker&&navigator.serviceWorker.controller;if(c)c.postMessage({type:'vis',v:document.visibilityState==='visible'})}catch(e){}}
+document.addEventListener('visibilitychange',reportVis);addEventListener('pagehide',()=>{try{const c=navigator.serviceWorker&&navigator.serviceWorker.controller;if(c)c.postMessage({type:'vis',v:false})}catch(e){}});
+setInterval(()=>{if(document.visibilityState==='visible')reportVis()},15000);setTimeout(reportVis,1000);

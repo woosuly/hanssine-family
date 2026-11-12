@@ -38,7 +38,7 @@ function chatMsgHtml(m){const mine=m.by===ME,w=whoOf(m.by);const a=m.act&&ACTS.f
     :`<div class="bub ${mine?'mine':''} ${w.ai?'aib':''}" data-mid="${esc(m.id)}">${esc(m.text)}${m.orig?`<span class="orig">${esc(m.orig)}</span>`:''}${w.ai&&!m.wait?`<button class="tts" data-say="${esc(m.id)}">읽어 주기</button>`:''}</div>`;
   const rq=m.reply?`<button class="rq" data-jump="${esc(m.reply.id)}"><b>${esc(whoOf(m.reply.by).name)}</b> ${esc(m.reply.t)}</button>`:'';
   return `<div class="cm ${mine?'mine':''}" id="cm-${esc(m.id)}">${mine?'':`<span class="av ${w.ai?'aiav':''}" style="background:${w.color}">${w.ai?'AI':esc(w.name.slice(0,1))}</span>`}
-    <div class="cmb">${mine?'':`<span class="cmn">${esc(w.name)}</span>`}${rq}${body}<span class="cmt">${hhmm(m.ts)}</span></div></div>`}
+    <div class="cmb">${mine?'':`<span class="cmn">${esc(w.name)}</span>`}${rq}${body}<span class="cmt">${rcHtml(m)}${hhmm(m.ts)}</span></div></div>`}
 // 답장: 말풍선 메뉴에서 '답장' → 입력창 위에 원래 메시지 표시 → 보내면 인용과 함께 저장
 let CREPLY=null;
 function msgSnip(m){return m.text?m.text.replace(/\s+/g,' ').slice(0,40):m.sticker?'이모티콘':m.act?'움직이는 이모티콘':m.img?'사진':m.file?(isImg(m.file)?'사진':isVid(m.file)?'동영상':'파일'):''}
@@ -64,7 +64,7 @@ async function postChat(text,stk){
   const r={id:uid(),by:'ai:'+prov,ts:Date.now(),text:'생각하고 있어요…',wait:true};S.chat.push(r);refreshChat();
   const hist=S.chat.filter(x=>x.text&&!x.wait).slice(-10).map(x=>({role:x.by.startsWith('ai:')?'ai':'user',text:(x.by.startsWith('ai:')?'':whoOf(x.by).name+': ')+x.text.replace(/@\S+\s?/,'')}));
   try{r.text=await callAI(aiSystem(true),hist,prov)}catch(e){r.text=aiErr(e)}delete r.wait;r.ts=Date.now();save();refreshChat()}
-function refreshChat(){const box=$('#clog');if(box){box.innerHTML=chatLogHtml();box.scrollTop=box.scrollHeight;bindMsgs(box)}}
+function refreshChat(){const box=$('#clog');if(box){box.innerHTML=chatLogHtml();box.scrollTop=box.scrollHeight;bindMsgs(box)}if(CROOM)markRoomRead(CROOM);else markFamRead()}
 function talkView(){
   const fx=fxKind();
   if(RLOADED&&CROOM&&!ROOMS.some(r=>r.id===CROOM)){closeRoom();CROOM=null}const room=CROOM&&ROOMS.find(r=>r.id===CROOM);
@@ -80,7 +80,7 @@ function bindTalk(){
   const talk=$('#talk');talk.style.height=Math.max(320,window.innerHeight/scale()-150)+'px';
   const box=$('#clog');box.scrollTop=box.scrollHeight;bindMsgs(box);
   startFx($('#fxcv'),fxKind());const pick=$('#atpick');
-  bindReplyBar();bindRoomBar();if(CROOM)markRead(CROOM);
+  bindReplyBar();bindRoomBar();if(CROOM)markRoomRead(CROOM);else markFamRead();
   const c=bindComposer('k',{onInput:v=>{DRAFT=v;pick.hidden=!!CROOM||!/@\w*$/.test(v);typingPing(!!v.trim()&&!/^@/.test(v.trim()))},onPlus:()=>{$('#emop').hidden=true},
     onSend:t=>{DRAFT='';pick.hidden=true;postChat(t);refreshChat()},
     onFile:f=>{postMsg({file:f});refreshChat()},onEmoji:()=>{$('#emop').hidden=!$('#emop').hidden},onTrans:t=>trSendSheet(t)});
@@ -96,7 +96,8 @@ function bindMsgs(root){bindSay(root);
   root.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>playAct(b.dataset.play));
   root.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{const m=findMsg(b.dataset.view);if(m)viewFile(m.file||{data:m.img,type:'image/jpeg',name:'사진'})});
   root.querySelectorAll('[data-mid]').forEach(b=>b.onclick=e=>{if(e.target.closest('.tts'))return;msgMenu(b.dataset.mid)});
-  root.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>jumpTo(b.dataset.jump))}
+  root.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>jumpTo(b.dataset.jump));
+  root.querySelectorAll('[data-rc]').forEach(b=>b.onclick=e=>{e.stopPropagation();readSheet(b.dataset.rc)})}
 function msgMenu(id){const m=findMsg(id);if(!m||m.wait)return;
   if(!m.text){sheet(`<div class="stack"><div class="card small muted">${esc(whoOf(m.by).name)} · ${esc(msgSnip(m))}</div><div class="actions"><button class="btn" id="mrp">답장</button></div></div>`);$('#mrp').onclick=()=>setReply(id);return}
   const ko=/[가-힣]/.test(m.text),to=ko?pref('chatTr','en'):'ko',r=TRM[id+to];

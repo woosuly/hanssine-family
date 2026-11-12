@@ -9,7 +9,7 @@ function renderSenior(){
     <div class="sr-head"><button class="sr-day" id="dd0"><b>${t.getMonth()+1}월 ${t.getDate()}일 <span>${DOW[t.getDay()]}요일</span></b>${l?`<small>음력 ${l.leap?'윤':''}${l.m}월 ${l.d}일</small>`:''}</button>
       <button class="sr-wx" id="wx" aria-label="주간 날씨">${wxIcon(w[2],46)}<span><b class="num">${w[0]}°</b><small class="dust-${w[4]}">미세먼지 ${w[4]}</small></span></button></div>
     <div class="sr-body">${body}</div>
-    <nav class="sr-bar">${[['home','홈'],['talk','대화'],['todo','할 일'],['fam','가족']].map(([k,n])=>`<button data-st="${k}" class="${SR_TAB===k?'on':''}">${SICON[k]}<span>${n}</span>${k==='todo'&&done<2?'<i class="badge"></i>':''}</button>`).join('')}</nav></div>`;
+    <nav class="sr-bar">${[['home','홈'],['talk','대화'],['todo','할 일'],['fam','가족']].map(([k,n])=>`<button data-st="${k}" class="${SR_TAB===k?'on':''}">${SICON[k]}<span>${n}</span>${k==='todo'&&done<2?'<i class="badge"></i>':''}${k==='talk'?badgeHtml():''}</button>`).join('')}</nav></div>`;
   $('#wx').onclick=weatherSheet;$('#dd0').onclick=()=>{SR_TAB='fam';renderSenior()};
   document.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{SR_TAB=b.dataset.st;stopListen();renderSenior()});
   stopFx();
@@ -132,7 +132,7 @@ function bindSrTalk(){
     try{const a=await callAI(aiSystem(),hist);CHAT[CHAT.length-1]={role:'ai',text:a};srAiSave();if(SR_TAB==='talk')renderSenior();speak(a)}
     catch(e){CHAT[CHAT.length-1]={role:'err',text:aiErr(e)};if(SR_TAB==='talk')renderSenior()}};
   $('#tsend').onclick=send;bindMsgs(box);if($('#snew'))$('#snew').onclick=()=>{CHAT=[];srAiSave();renderSenior()};bindReplyBar();
-  if(CROOM)markRead(CROOM);
+  if(CROOM)markRoomRead(CROOM);else if(SCHAT==='fam')markFamRead();
   if(SCHAT==='fam'){$('#tq').oninput=e=>typingPing(!!e.target.value.trim());$('#tq').onblur=()=>typingPing(false)}
   if($('#tstk'))$('#tstk').onclick=()=>{sheet(`<h2>이모티콘 보내기</h2><p class="muted" style="font-size:.85em;margin:.2em 0 .6em">누르면 바로 가족 대화방에 보내집니다</p>
     <div class="sr-h2">움직이는 이모티콘</div><div class="actbig">${ACTS.map(a=>`<button data-act="${a[0]}"><span>${a[2]}</span><small>${a[1]}</small></button>`).join('')}</div>

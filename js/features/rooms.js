@@ -9,21 +9,23 @@ const roomMembers=r=>(r.members||[]).map(id=>(mem(id)||{}).name).filter(Boolean)
 // 읽음 표시는 이 폰에만 기억
 function readMap(){try{return JSON.parse(localStorage.getItem('hanssine-read-'+ME))||{}}catch(e){return {}}}
 function markRead(id,ts){const m=readMap();m[id]=Math.max(m[id]||0,ts||Date.now());try{localStorage.setItem('hanssine-read-'+ME,JSON.stringify(m))}catch(e){}}
-const unread=r=>!!(r.last&&r.last.by!==ME&&r.last.ts>(readMap()[r.id]||0));
+const unread=r=>!!(r.last&&r.last.by!==ME&&r.last.ts>roomLastRead(r));
+const PREVLAST={};
 
 // 내가 들어 있는 방 목록 듣기 (앱 시작·사용자 변경 때)
 function roomsListen(){if(RLIVE){RLIVE();RLIVE=null}ROOMS=[];RLOADED=false;if(!roomOn())return;const me0=ME;
   RLIVE=roomsRef().where('members','array-contains',ME).onSnapshot(qs=>{if(ME!==me0)return;
     RLOADED=true;ROOMS=qs.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>((b.last||{}).ts||b.ts||0)-((a.last||{}).ts||a.ts||0));roomsChanged()},e=>console.warn('rooms',e))}
 function roomsChanged(){
+  ROOMS.forEach(r=>{const t=(r.last||{}).ts||0;if(r.id in PREVLAST&&t>PREVLAST[r.id]&&r.last.by!==ME)inAppAlert({by:r.last.by,text:r.last.t},r.id);PREVLAST[r.id]=t});
+  updateReadCounts();updateBadge();
   if(RLOADED&&CROOM&&!ROOMS.some(r=>r.id===CROOM)){CROOM=null;closeRoom();if(SR_TAB==='talk'&&SCHAT.startsWith('room:'))SCHAT='fam'}
   if($('#roombar')){$('#roombar').outerHTML=roomBarHtml();bindRoomBar()}
   else if($('#tseg')&&!busy())renderSenior()}
 function openRoom(id){closeRoom();CROOM=id;RMSG=[];if(!roomOn())return;
   RUNSUB=roomsRef().doc(id).collection('msgs').orderBy('ts').limitToLast(200).onSnapshot(qs=>{
     if(CROOM!==id)return;RMSG=qs.docs.map(d=>{try{return JSON.parse(d.data().j)}catch(e){return null}}).filter(Boolean);
-    markRead(id,(RMSG.at(-1)||{}).ts);
-    if($('#clog'))refreshChat();else if($('#tlog')&&!busy())renderSenior()},e=>console.warn('room msgs',e))}
+    if($('#clog'))refreshChat();else{markRoomRead(id);if($('#tlog')&&!busy())renderSenior()}},e=>console.warn('room msgs',e))}
 function closeRoom(){if(RUNSUB){RUNSUB();RUNSUB=null}RMSG=[]}
 function setRoom(id){CREPLY=null;DRAFT='';if(id)openRoom(id);else{closeRoom();CROOM=null}renderMain()}
 

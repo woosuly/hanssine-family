@@ -21,7 +21,7 @@ function renderMain(){
     ${sub?`<h2 style="font-size:20px;margin-top:4px">${sub}</h2>`:''}
     ${body}</div>
     ${TAB==='album'?`<button class="fab" id="add">사진 올리기</button><input type="file" id="file" accept="image/*" hidden>`:''}
-    <nav class="tabbar"><div class="in">${tabs().map(([k,n])=>`<button data-tab="${k}" class="${TAB===k?'on':''}">${ICON[k]}${n}</button>`).join('')}</div></nav>`;
+    <nav class="tabbar"><div class="in">${tabs().map(([k,n])=>`<button data-tab="${k}" class="${TAB===k?'on':''}">${ICON[k]}${n}${k==='talk'?badgeHtml():''}</button>`).join('')}</div></nav>`;
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;stopListen();render();window.scrollTo(0,0)});
   if($('#gear'))$('#gear').onclick=()=>{if(!SUBPAGES[TAB])PREV_TAB=TAB;TAB='set';render();window.scrollTo(0,0)};
   if($('#tback'))$('#tback').onclick=()=>{TAB=PREV_TAB||'home';render()};

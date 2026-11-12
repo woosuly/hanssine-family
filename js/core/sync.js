@@ -34,6 +34,7 @@ function rebuild(){COLL_KEYS.forEach(k=>{const pre=k+'~',have=new Set(Object.key
   have.forEach(ck=>out.push(SYNC.obj[ck]));S[k]=out})}
 function applyState(qs){const keys=[];
   qs.docChanges().forEach(ch=>{const id=ch.doc.id;if(ch.type==='removed')return;const d=ch.doc.data(),remote=!ch.doc.metadata.hasPendingWrites;
+    if(id.startsWith('read_')){readGot(id.slice(5),d);return}
     if(id.startsWith('typing_')){if(remote)typingGot(id.slice(7),d);return}
     if(id.startsWith('order_')){const oj=JSON.stringify(d.ids||[]);if(SYNC.cache[id]===oj)return;SYNC.cache[id]=oj;SYNC.order[id.slice(6)]=d.ids||[];if(remote)keys.push(id.slice(6))}
     else if(!LOCAL_KEYS.includes(id)&&SYNC.cache[id]!==d.j){SYNC.cache[id]=d.j;try{S[id]=JSON.parse(d.j)}catch(e){}if(remote)keys.push(id)}});
@@ -41,12 +42,13 @@ function applyState(qs){const keys=[];
 function applyItems(qs){const keys=[];
   qs.docChanges().forEach(ch=>{const id=ch.doc.id,k=id.split('~')[0],remote=!ch.doc.metadata.hasPendingWrites;
     if(ch.type==='removed'){if(SYNC.obj[id]){delete SYNC.obj[id];delete SYNC.objJ[id];delete SYNC.cache[id];if(remote)keys.push(k)}return}
-    const d=ch.doc.data();SYNC.cache[id]=d.j;if(SYNC.objJ[id]!==d.j){try{SYNC.obj[id]=JSON.parse(d.j);SYNC.objJ[id]=d.j}catch(e){}if(remote)keys.push(k)}});
+    const d=ch.doc.data();SYNC.cache[id]=d.j;if(SYNC.objJ[id]!==d.j){try{SYNC.obj[id]=JSON.parse(d.j);SYNC.objJ[id]=d.j}catch(e){}if(remote)keys.push(k)
+      if(remote&&ch.type==='added'&&k==='chat'&&SYNC.booted){const o=SYNC.obj[id];if(o&&o.by!==ME&&!String(o.by).startsWith('ai:'))inAppAlert(o,null)}}});
   SYNC.gotI=true;rebuild();changed(keys)}
 
 // 다른 가족이 바꾼 내용 반영: 입력 중이거나 창이 열려 있으면 미뤘다가 반영
 const busy=()=>{const a=document.activeElement;return !!$('#layer').innerHTML||!!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))};
-function changed(keys){if(!SYNC.booted||!keys.length)return;if(keys.every(k=>QUIET_KEYS.includes(k)))return;
+function changed(keys){if(!SYNC.booted||!keys.length)return;if(keys.includes('chat'))updateBadge();if(keys.every(k=>QUIET_KEYS.includes(k)))return;
   clearTimeout(SYNC.rt);SYNC.rt=setTimeout(()=>{if(keys.includes('chat')&&$('#clog'))refreshChat();if(busy()){SYNC.pend=true;return}rerender()},120)}
 function rerender(){SYNC.pend=false;if(!ME||!mem(ME)){render();return}const y=(document.scrollingElement||document.body).scrollTop,
   sc=[...document.querySelectorAll('#app *')].filter(e=>e.scrollTop>0).map(e=>[e.id||e.className,e.scrollTop]);

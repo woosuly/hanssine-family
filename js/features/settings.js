@@ -1,6 +1,6 @@
 
 /* features/settings */
-const NOTI=[['photo','새 사진'],['chat','가족 대화'],['event','일정 알림'],['notice','공지']];
+const NOTI=[['photo','새 사진'],['chat','가족 대화'],['event','일정 알림'],['notice','공지'],['inapp_vib','앱 쓰는 중 진동'],['inapp_snd','앱 쓰는 중 소리']];
 let AITAB=null; // 설정 > AI 연결에서 보고 있는 AI
 function setView(){
   const r=me().role,adm=isAdmin(),m=me(),nb=nextBd(m),t=today0();const N=S.notify;

@@ -646,3 +646,9 @@ body.dragging{user-select:none;-webkit-user-select:none}
 .rdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-left:5px;vertical-align:middle}
 .rmem{margin:-4px 0 6px}
 .tseg>button:nth-child(3){grid-column:1/-1}
+/* 안 읽은 수 */
+.rc{border:0;background:none;padding:0 4px 0 0;font-size:11px;font-weight:700;color:var(--pine);min-width:0;cursor:pointer}
+.rc:empty{padding:0}
+.tabbar button,.sr-bar button{position:relative}
+.nbadge{position:absolute;top:2px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;font-style:normal;font-weight:700;line-height:18px;text-align:center}
+.sr-bar .nbadge{top:.2em;left:calc(50% + .5em);font-size:.6em;min-width:1.7em;height:1.7em;line-height:1.7em;border-radius:.85em}
