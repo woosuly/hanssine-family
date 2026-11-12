@@ -58,7 +58,8 @@ function applyAct(a,img){const r=me().role,isT=isTreas();
   if(a.type==='tx'){if(!isT){S.chat=S.chat||[];S.chat.push({id:uid(),by:ME,ts:Date.now(),text:`[회비 기록 요청] ${a.date} ${a.desc} ${won(a.amount)} — 총무님 확인 부탁드려요`});return `총무(${S.dues.treasurer?HOUSES[S.dues.treasurer]:'미정'})에게 기록 요청을 보냈어요`}
     S.dues.tx.push({id:uid(),date:a.date,desc:a.desc,amt:a.amount,acc:accs().some(x=>x.id===a.acc)?a.acc:(accs()[0]||{}).id});return '회비 내역에 기록했어요'}
   if(a.type==='notice'){S.notices.push({id:uid(),by:ME,text:a.text,date:ymd(today0()),scope:'all',sms:false});return '공지로 올렸어요'}
-  if(a.type==='photo'){if(!img)return '사진이 없어요';const fd=(S.folders.find(f=>f.name===a.tag)||{}).id||'';S.photos.push({id:uid(),by:ME,folder:fd,tag:fname(fd),caption:a.caption||'새 사진',date:ymd(today0()),scope:'all',img,reacts:{}});return '앨범에 올렸어요'}
+  if(a.type==='photo'){if(!img)return '사진이 없어요';const fd=(S.folders.find(f=>f.name===a.tag)||{}).id||'';const p={id:uid(),by:ME,folder:fd,tag:fname(fd),caption:a.caption||'새 사진',date:ymd(today0()),scope:'all',img,reacts:{}};
+    upMedia(img,'photo.jpg').then(u=>{p.img=u;S.photos.push(p);save();toast('앨범에 올렸어요');if(TAB==='album')renderMain()}).catch(upFail);return '앨범에 올리는 중이에요'}
   if(a.type==='poll'){S.poll={id:uid(),q:a.q,open:true,opts:(a.opts||[]).slice(0,4).map(t=>({t,v:[]}))};return '투표를 만들었어요'}
   if(a.type==='settle'){S.settles.push({id:uid(),date:ymd(today0()),title:a.title,total:a.total,fromDues:0,houses:['h1','h2','h3']});return '정산에 추가했어요'}
   return '반영할 수 없는 항목이에요'}

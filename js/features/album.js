@@ -50,7 +50,9 @@ function uploadForm(img,fid){
     <div class="field"><label for="scope">공개 범위</label><select id="scope">${Object.entries(SCOPES).filter(([k])=>me().role==='child'||k!=='kids').map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div>
     <button class="btn block" id="up">올리기</button></div>`);
   $('#pfold').onchange=e=>{if(e.target.value==='__new')folderForm(null,id=>uploadForm(img,id))};
-  $('#up').onclick=()=>{const fd=$('#pfold').value;S.photos.push({id:uid(),by:ME,folder:fd,tag:fname(fd),caption:$('#cap').value.trim()||'새 사진',date:ymd(today0()),scope:$('#scope').value,img,reacts:{}});save();close();toast('올렸어요');renderMain()};
+  $('#up').onclick=async()=>{const fd=$('#pfold').value,cap=$('#cap').value.trim()||'새 사진',sc=$('#scope').value;$('#up').disabled=true;
+    const url=await upMedia(img,'photo.jpg').catch(upFail);if(!url){$('#up').disabled=false;return}
+    S.photos.push({id:uid(),by:ME,folder:fd,tag:fname(fd),caption:cap,date:ymd(today0()),scope:sc,img:url,reacts:{}});save();close();toast('올렸어요');renderMain()};
 }
 function cmtCount(p){return (p.comments||[]).reduce((a,c)=>a+1+(c.replies||[]).length,0)}
 function reactSummary(p){const g={};Object.entries(p.reacts||{}).forEach(([k,v])=>{(g[v]=g[v]||[]).push(mem(k)?mem(k).name:'')});
@@ -79,6 +81,6 @@ function photoDetail(id){
     if(rp){rp.replies=rp.replies||[];rp.replies.push(c);REPLY=null}else p.comments.push(c);save();photoDetail(id);setTimeout(()=>{const s=$('.sheet');if(s)s.scrollTop=s.scrollHeight},30)};
   $('#pcsend').onclick=send;$('#pcq').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send()}};
   if($('#pfold'))$('#pfold').onchange=e=>{if(e.target.value==='__new')return folderForm(null,fid=>{p.folder=fid;p.tag=fname(fid);save();photoDetail(id)});p.folder=e.target.value;p.tag=fname(p.folder);save();toast(fname(p.folder)+' 폴더로 옮겼어요')};
-  if($('#del'))$('#del').onclick=()=>{$('#del').outerHTML=`<button class="btn block" style="background:var(--red)" id="del2">삭제 확인</button>`;$('#del2').onclick=()=>{S.photos=S.photos.filter(x=>x.id!==id);save();close();renderMain()}};
+  if($('#del'))$('#del').onclick=()=>{$('#del').outerHTML=`<button class="btn block" style="background:var(--red)" id="del2">삭제 확인</button>`;$('#del2').onclick=()=>{delMedia(p.img);S.photos=S.photos.filter(x=>x.id!==id);save();close();renderMain()}};
 }
 function newPhotos(){return S.photos.filter(canSee).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6)}

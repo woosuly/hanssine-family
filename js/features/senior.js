@@ -17,7 +17,7 @@ function renderSenior(){
   bindDev();
 }
 function allPhotos(){return S.photos.filter(canSee).sort((a,b)=>b.date.localeCompare(a.date))}
-function srBg(){const v=pref('bg','');if(v&&v.startsWith('data:'))return v;const p=S.photos.find(x=>x.id===v);return p?p.img:(allPhotos().find(x=>x.tag==='풍경')||allPhotos()[0]||{img:art('mountain')}).img}
+function srBg(){const v=pref('bg','');if(v&&(v.startsWith('data:')||isRemote(v)))return v;const p=S.photos.find(x=>x.id===v);return p?p.img:(allPhotos().find(x=>x.tag==='풍경')||allPhotos()[0]||{img:art('mountain')}).img}
 function unseenPhotos(){return allPhotos().filter(p=>p.by!==ME&&!(p.reacts||{})[ME]&&(today0()-parse(p.date))/864e5<=14)}
 function srHome(){
   const t=today0();const nx=upcoming(60).filter(e=>e.type!=='etc')[0];
@@ -80,7 +80,7 @@ function seniorSettings(){
     <button class="btn ghost block" id="chg">사용자 변경 (관리자)</button></div>`,true);
   bindFs(()=>{renderSenior();seniorSettings()});$('#chg').onclick=pinSheet;bindPushRow(seniorSettings);
   $('#bgup').onclick=()=>$('#bgfile').click();
-  $('#bgfile').onchange=async e=>{const f=e.target.files[0];if(!f)return;const x=await prepFile(f);if(x){setPref('bg',x.data);toast('홈 배경으로 정했어요');seniorSettings()}};
+  $('#bgfile').onchange=async e=>{const f=e.target.files[0];if(!f)return;const x=await prepFile(f);if(x){const u=await upMedia(x.data,'bg.jpg').catch(upFail);if(!u)return;setPref('bg',u);toast('홈 배경으로 정했어요');seniorSettings()}};
   $('#bgpick').onclick=()=>{sheet(`<h2>배경으로 쓸 사진을 고르세요</h2><div class="bggrid">${allPhotos().map(p=>`<button data-bg="${p.id}"><img src="${p.img}" alt=""></button>`).join('')}</div>`,true,seniorSettings);
     document.querySelectorAll('[data-bg]').forEach(b=>b.onclick=()=>{setPref('bg',b.dataset.bg);toast('홈 배경으로 정했어요');seniorSettings()})};
 }

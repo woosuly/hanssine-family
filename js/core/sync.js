@@ -25,7 +25,7 @@ function flush(){
       Object.keys(SYNC.obj).forEach(ck=>{if(ck.startsWith(k+'~')&&!keep.has(ck)){delete SYNC.obj[ck];delete SYNC.objJ[ck];delete SYNC.cache[ck];ops.push(['del',base.collection('items').doc(ck)])}});
     }else{const j=JSON.stringify(v??null);if(SYNC.cache[k]===j)continue;SYNC.cache[k]=j;
       const d={j};if(k==='master')d.member=(v||{}).member||'';ops.push(['set',base.collection('state').doc(k),d])}}
-  if(big)toast('파일이 커서 올리지 못했어요. 사진 저장소 연결 후 올릴 수 있어요');
+  if(big)toast('파일이 커서 저장하지 못했어요');
   for(let i=0;i<ops.length;i+=400){const b=DB.batch();ops.slice(i,i+400).forEach(([t,r,d])=>t==='set'?b.set(r,d):b.delete(r));
     b.commit().catch(e=>{console.warn('sync',e);toast('저장하지 못했어요. 인터넷 연결을 확인해 주세요')})}
 }

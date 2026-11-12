@@ -83,7 +83,7 @@ function bindTalk(){
   bindReplyBar();bindRoomBar();if(CROOM)markRoomRead(CROOM);else markFamRead();
   const c=bindComposer('k',{onInput:v=>{DRAFT=v;pick.hidden=!!CROOM||!/@\w*$/.test(v);typingPing(!!v.trim()&&!/^@/.test(v.trim()))},onPlus:()=>{$('#emop').hidden=true},
     onSend:t=>{DRAFT='';pick.hidden=true;postChat(t);refreshChat()},
-    onFile:f=>{postMsg({file:f});refreshChat()},onEmoji:()=>{$('#emop').hidden=!$('#emop').hidden},onTrans:t=>trSendSheet(t)});
+    onFile:async f=>{const u=await upFile(f).catch(upFail);if(u){postMsg({file:u});refreshChat()}},onEmoji:()=>{$('#emop').hidden=!$('#emop').hidden},onTrans:t=>trSendSheet(t)});
   c.q.addEventListener('blur',()=>typingPing(false));
   document.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{c.q.value=c.q.value.replace(/@\w*$/,'')+'@'+b.dataset.at+' ';DRAFT=c.q.value;pick.hidden=true;c.q.focus()});
   bindEmo(id=>{postChat('',id);$('#emop').hidden=true;refreshChat()},e=>{c.q.value+=e;DRAFT=c.q.value},id=>{postMsg({act:id});$('#emop').hidden=true;refreshChat();playAct(id)});

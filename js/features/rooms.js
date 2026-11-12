@@ -31,7 +31,7 @@ function setRoom(id){CREPLY=null;DRAFT='';if(id)openRoom(id);else{closeRoom();CR
 
 // 방에 보내기: 화면에 먼저 보여 주고 저장
 function roomPost(o){const m={id:uid(),by:ME,ts:Date.now(),...o};if(CREPLY){m.reply=CREPLY;CREPLY=null;showReplyBar()}
-  const j=JSON.stringify(m);if(j.length>9e5){toast('파일이 커서 보낼 수 없어요. 사진 저장소 연결 후 가능해요');return m}
+  const j=JSON.stringify(m);if(j.length>9e5){toast('파일이 커서 보낼 수 없어요');return m}
   RMSG.push(m);const r=roomsRef().doc(CROOM);
   r.collection('msgs').doc(m.id).set({j,ts:m.ts,by:ME}).catch(e=>{console.warn(e);toast('보내지 못했어요. 인터넷 연결을 확인해 주세요')});
   r.update({last:{t:msgSnip(m),by:ME,ts:m.ts}}).catch(()=>{});markRead(CROOM,m.ts);return m}

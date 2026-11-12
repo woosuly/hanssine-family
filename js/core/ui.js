@@ -38,23 +38,26 @@ const IC={
   swap:'<svg viewBox="0 0 24 24"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>'};
 const ib=(id,ic,label,extra)=>`<button class="ibtn ${extra||''}" id="${id}" aria-label="${label}" title="${label}">${IC[ic]}</button>`;
 function readFile(f){return new Promise(res=>{const r=new FileReader();r.onload=()=>res({name:f.name,size:f.size,type:f.type||'',data:r.result});r.readAsDataURL(f)})}
+// 사진 긴 변: 저장소를 쓰면 2048px, 아니면 문서 한도 때문에 1600px
 const LIM={img:1600,vidSec:60,vidMB:50,fileMB:20};
+const imgMax=()=>typeof MEDIA_ON==='function'&&MEDIA_ON()?2048:LIM.img;
 function vidDur(data){return new Promise(res=>{const v=document.createElement('video');v.preload='metadata';v.onloadedmetadata=()=>res(v.duration||0);v.onerror=()=>res(0);v.src=data})}
 async function prepFile(f){
-  if(/^image\//.test(f.type)&&!/gif|svg/.test(f.type)){const x=await readFile(f);const d=await shrink(x.data,LIM.img);return {...x,data:d,type:'image/jpeg',size:Math.round(d.length*.75)}}
+  if(/^image\//.test(f.type)&&!/gif|svg/.test(f.type)){const x=await readFile(f);const d=await shrink(x.data,imgMax());return {...x,data:d,type:'image/jpeg',size:Math.round(d.length*.75)}}
   if(/^video\//.test(f.type)){if(f.size>LIM.vidMB*1e6){toast(`동영상은 ${LIM.vidMB}MB까지 올릴 수 있어요`);return null}
     const x=await readFile(f);const sec=await vidDur(x.data);if(sec>LIM.vidSec+1){toast(`동영상은 ${LIM.vidSec/60}분 이내만 올릴 수 있어요 (${Math.round(sec)}초)`);return null}return x}
   if(f.size>LIM.fileMB*1e6){toast(`파일은 ${LIM.fileMB}MB까지 올릴 수 있어요`);return null}
   return readFile(f)}
 function compress(f){return prepFile(f).then(x=>x?x.data:Promise.reject())}
-function shrink(img,max){return new Promise(res=>{const im=new Image();im.onload=()=>{const s=Math.min(1,(max||1600)/Math.max(im.width,im.height));if(s===1&&img.length<7e5)return res(img);
-  const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.8))};im.onerror=()=>res(img);im.src=img})}
+function shrink(img,max){return new Promise(res=>{const im=new Image();im.onload=()=>{const s=Math.min(1,(max||1600)/Math.max(im.width,im.height));if(s===1&&img.length<(max>1600?2.5e6:7e5))return res(img);
+  const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',max>1600?.85:.8))};im.onerror=()=>res(img);im.src=img})}
 const fsize=n=>n>1e6?(n/1e6).toFixed(1)+'MB':Math.max(1,Math.round(n/1e3))+'KB';
 const isImg=f=>/^image\//.test(f.type),isVid=f=>/^video\//.test(f.type),isAud=f=>/^audio\//.test(f.type);
 const fileInputs=pfx=>`<input type="file" id="${pfx}img" accept="image/*,video/*" multiple hidden><input type="file" id="${pfx}cam" accept="image/*" capture="environment" hidden><input type="file" id="${pfx}file" multiple hidden>`;
 function bindFiles(pfx,onFile){['img','cam','file'].forEach(k=>{const el=$('#'+pfx+k);if(el)el.onchange=async e=>{for(const f of e.target.files){const x=await prepFile(f);if(x)onFile(x)}e.target.value=''}})}
 function viewFile(f){sheet(`<div class="stack">${isImg(f)?`<img src="${f.data}" alt="" style="width:100%;border-radius:12px">`:isVid(f)?`<video src="${f.data}" controls style="width:100%;border-radius:12px"></video>`:''}
-  <div><b>${esc(f.name||'사진')}</b><div class="small muted">${f.size?fsize(f.size):''}</div></div></div>`,true)}
+  <div><b>${esc(f.name||'사진')}</b><div class="small muted">${f.size?fsize(f.size):''}</div></div>
+  ${/^https?:/.test(f.data||'')?`<a class="btn block" href="${esc(f.data)}" target="_blank" rel="noopener">${isImg(f)||isVid(f)?'원본 열기':'열기 · 내려받기'}</a>`:''}</div>`,true)}
 IC.plus='<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
 IC.trans='<svg viewBox="0 0 24 24"><path d="M3 5h9M7.5 3v2M5.5 5c0 3.5 2.5 6.5 5.5 8M9.5 5c-.5 3.5-2.8 6.6-6 8.2"/><path d="M12.5 21l4-9 4 9M14 18h5"/></svg>';
 IC.folder='<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';

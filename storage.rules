@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // 등록된 가족 폰인지 (Firestore의 등록 정보 확인)
+    function member() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/families/hanssine/devices/$(request.auth.uid));
+    }
+    // 가족 사진·동영상·파일: 등록된 폰만 올리고 지움. 한 파일 55MB까지
+    match /families/hanssine/media/{month}/{file} {
+      allow read: if member();
+      allow create: if member() && request.resource.size < 55 * 1024 * 1024;
+      allow delete: if member();
+    }
+  }
+}
