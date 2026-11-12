@@ -17,12 +17,13 @@ function renderMain(){
   const body=({home:homeView,talk:talkView,album:albumView,cal:calView,dues:duesView,set:setView,trans:()=>'<div id="transroot" class="transroot"></div>'})[TAB]();
   $('#app').innerHTML=`<div class="wrap">${devBar()}
     <div class="top">${sub?`<button class="backlink" id="tback">${BACKSVG}뒤로</button>`:`<span class="brand">${esc(S.brand||"Han's Family")}</span>`}
-      <span class="tr">${TAB!=='set'?`<button class="gear" id="gear" aria-label="설정">${GEARSVG}</button>`:''}</span></div>
+      <span class="tr">${TAB!=='set'?`<button class="gear" id="gplay" aria-label="놀이"><svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7.5 10.5v4M5.5 12.5h4"/><circle cx="15.5" cy="11.5" r=".9"/><circle cx="17.5" cy="13.8" r=".9"/></svg></button><button class="gear" id="gear" aria-label="설정">${GEARSVG}</button>`:''}</span></div>
     ${sub?`<h2 style="font-size:20px;margin-top:4px">${sub}</h2>`:''}
     ${body}</div>
     ${TAB==='album'?`<button class="fab" id="add">사진 올리기</button><input type="file" id="file" accept="image/*" hidden>`:''}
     <nav class="tabbar"><div class="in">${tabs().map(([k,n])=>`<button data-tab="${k}" class="${TAB===k?'on':''}">${ICON[k]}${n}${k==='talk'?badgeHtml():''}</button>`).join('')}</div></nav>`;
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;SELM=false;SELP.clear();stopListen();render();window.scrollTo(0,0)});
+  if($('#gplay'))$('#gplay').onclick=gameMenu;
   if($('#gear'))$('#gear').onclick=()=>{if(!SUBPAGES[TAB])PREV_TAB=TAB;TAB='set';render();window.scrollTo(0,0)};
   if($('#tback'))$('#tback').onclick=()=>{TAB=PREV_TAB||'home';render()};
   ({home:bindHomeTab,talk:bindTalk,album:bindAlbum,cal:bindCal,dues:bindDues,set:bindSet,trans:()=>{$('#transroot').style.height=Math.max(380,window.innerHeight/scale()-150)+'px';transSheet()}})[TAB]();
@@ -47,14 +48,13 @@ function homeView(){
     </div>
     <div class="card" style="padding-block:8px"><div class="row between"><b>다가오는 일정</b><button class="link" data-go="cal">달력 ›</button></div>
       ${up.map(e=>`<div class="mini"><span>${esc(e.title)}</span><b class="num" style="color:var(--sun)">${dday(e._n)}</b></div>`).join('')||'<div class="small muted">없음</div>'}</div>
-    <button class="card gmcard" id="gmenu"><span><b>가족 놀이</b><br><span class="small muted">빙고 대결 · ${gameTop().concat(gameRotate()).filter(g=>g[0]!=='bingo').slice(0,3).map(g=>g[1]).join(' · ')}</span></span><b class="link">›</b></button>
     <div><div class="row between" style="margin-bottom:6px"><b>새 사진</b><button class="link" data-go="album">앨범 ›</button></div>
       <div class="thumbs">${ph.map(p=>`<button data-ph="${p.id}"><img src="${p.img}" alt="${esc(p.caption)}"></button>`).join('')}</div></div>
     ${isDaughter()?`<button class="card wxcard" data-go="dues"><span><b>${['monthly','tiered'].includes(S.dues.mode)?`${t.getMonth()+1}월 회비`:'회비'}</b> <span class="small muted num">${!S.dues.mode?'아직 정하지 않음':`${S.dues.mode==='event'?'':`${cnt}/3 가구 납부 · `}잔액 ${won(balance())}`}</span></span><span class="link">›</span></button>`:''}
   </div>`;
 }
 function bindHomeTab(){
-  bindPushRow(renderMain);$('#wx').onclick=weatherSheet;$('#ask').onclick=botSheet;if($('#gmenu'))$('#gmenu').onclick=gameMenu;if($('#pcard'))$('#pcard').onclick=parentSheet;
+  bindPushRow(renderMain);$('#wx').onclick=weatherSheet;$('#ask').onclick=botSheet;if($('#pcard'))$('#pcard').onclick=parentSheet;
   $('#nall').onclick=noticeList;if($('#nnew'))$('#nnew').onclick=noticeForm;
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{TAB=b.dataset.go;render();window.scrollTo(0,0)});
   document.querySelectorAll('[data-ph]').forEach(b=>b.onclick=()=>photoDetail(b.dataset.ph));
