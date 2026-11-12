@@ -697,3 +697,7 @@ body.kbopen .tabbar{display:none}
 .profn{font-size:24px;font-weight:700}
 .ppl{display:flex!important;align-items:center;gap:10px}
 .prof a.btn{text-decoration:none}
+
+.profbtn{border:0;background:none;padding:0;position:relative;flex:none}
+.profbtn i{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);font-style:normal;font-size:10px;background:var(--pine);color:var(--pine-ink);border-radius:999px;padding:1px 6px;white-space:nowrap}
+.av.mid{width:56px;height:56px;font-size:22px}

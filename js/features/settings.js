@@ -5,9 +5,9 @@ let AITAB=null; // 설정 > AI 연결에서 보고 있는 AI
 function setView(){
   const r=me().role,adm=isAdmin(),m=me(),nb=nextBd(m),t=today0();const N=S.notify;
   return `<div class="set">
-    <details open><summary>내 정보</summary><div class="in">
-      <div class="hh">${av(m)}<span style="flex:1;margin-left:10px;min-width:0"><b>${esc(byLabel(m))}</b><br><span class="small muted">생일 ${bdText(m)}${nb?` → ${md(nb)} (${dday(Math.round((nb-t)/864e5))})`:''}${m.phone?` · ${esc(m.phone)}`:''}</span></span><button class="chip" data-edit="${m.id}">수정</button></div>
-      <div class="small muted">생일·전화번호는 본인이 직접 입력합니다. 이름·가구는 관리자가 정합니다.</div></div></details>
+    <details open><summary>내 프로필</summary><div class="in">
+      <div class="hh"><button class="profbtn" data-edit="${m.id}" aria-label="프로필 사진 바꾸기">${av(m,'mid')}<i>${m.photo?'바꾸기':'사진'}</i></button><span style="flex:1;margin-left:10px;min-width:0"><b>${esc(byLabel(m))}</b><br><span class="small muted">생일 ${bdText(m)}${nb?` → ${md(nb)} (${dday(Math.round((nb-t)/864e5))})`:''}${m.phone?` · ${esc(m.phone)}`:''}</span></span><button class="chip" data-edit="${m.id}">프로필 수정</button></div>
+      <div class="small muted">사진·생일·전화번호는 본인이 직접 넣습니다. 이름·가구는 관리자가 정합니다. 사진은 대화창과 가족 화면에 보입니다.</div></div></details>
     <details><summary>내 화면</summary><div class="in"><div class="field"><label>글씨 크기</label>${fsSeg()}</div>
       <div class="field"><label>화면 모드</label><div class="seg" id="thseg">${THEMES.map(([k,n])=>`<button data-v="${k}" class="${pref('theme','system')===k?'on':''}">${n}</button>`).join('')}</div></div>
       <div class="field"><label>스킨</label><div class="swatches">${SKINS.map(([k,n,c])=>`<button class="sw ${pref('skin','forest')===k?'on':''}" data-skin="${k}"><i style="background:${c}"></i>${n}</button>`).join('')}</div></div></div></details>

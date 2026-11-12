@@ -72,13 +72,19 @@ function callConfirm(id){const d=mem(id);
     <a class="btn block callgo" href="tel:${esc(d.phone.replace(/\D/g,''))}" id="cgo">전화 걸기</a><button class="btn ghost block" id="cno">취소</button></div>`);
   $('#cno').onclick=close;$('#cgo').addEventListener('click',()=>setTimeout(close,300))}
 function seniorSettings(){
-  sheet(`<div class="stack"><h2>글씨 크기</h2>${fsSeg()}
+  const mm=me();
+  sheet(`<div class="stack"><h2>내 사진</h2><div class="row" style="gap:14px;align-items:center">${av(mm,'big')}<div class="stack" style="gap:6px"><button class="btn" id="myph">${mm.photo?'사진 바꾸기':'사진 넣기'}</button>${mm.photo?'<button class="btn ghost" id="myphx">사진 빼기</button>':''}</div></div>
+    <input type="file" id="myphf" accept="image/*" hidden>
+    <h2>글씨 크기</h2>${fsSeg()}
     <h2>홈 배경 사진</h2><img src="${srBg()}" alt="" class="bgprev">
     <div class="actions"><button class="btn" id="bgpick">사진첩에서 고르기</button><button class="btn ghost" id="bgup">휴대폰 사진</button></div>
     <input type="file" id="bgfile" accept="image/*" hidden>
     ${!LOCAL?`<h2>알림</h2>${pushRowHtml()}`:''}
     <button class="btn ghost block" id="chg">사용자 변경 (관리자)</button></div>`,true);
   bindFs(()=>{renderSenior();seniorSettings()});$('#chg').onclick=pinSheet;bindPushRow(seniorSettings);
+  $('#myph').onclick=()=>$('#myphf').click();
+  $('#myphf').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=await shrink((await readFile(f)).data,480);toast('사진 올리는 중…');const u=await upMedia(d,'profile.jpg');if(mm.photo)delMedia(mm.photo);mm.photo=u;save();toast('사진을 넣었어요');seniorSettings()}catch(er){upFail(er)}};
+  if($('#myphx'))$('#myphx').onclick=()=>{delMedia(mm.photo);delete mm.photo;save();seniorSettings()};
   $('#bgup').onclick=()=>$('#bgfile').click();
   $('#bgfile').onchange=async e=>{const f=e.target.files[0];if(!f)return;const x=await prepFile(f);if(x){const u=await upMedia(x.data,'bg.jpg').catch(upFail);if(!u)return;setPref('bg',u);toast('홈 배경으로 정했어요');seniorSettings()}};
   $('#bgpick').onclick=()=>{sheet(`<h2>배경으로 쓸 사진을 고르세요</h2><div class="bggrid">${allPhotos().map(p=>`<button data-bg="${p.id}"><img src="${p.img}" alt=""></button>`).join('')}</div>`,true,seniorSettings);
