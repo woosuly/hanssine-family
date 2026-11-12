@@ -1,6 +1,9 @@
 
 /* features/bot */
-let BOT=[],BOTIMG=null;
+let BOT=[],BOTIMG=null,BOTWHO=null;
+// AI 비서 대화는 이 폰에만 기억 (사진은 빼고 최근 30개). '새 대화'로 지움
+function botLoad(){if(BOTWHO===ME)return;BOTWHO=ME;try{BOT=JSON.parse(localStorage.getItem('hanssine-bot-'+ME))||[]}catch(e){BOT=[]}}
+function botSave(){try{localStorage.setItem('hanssine-bot-'+ME,JSON.stringify(BOT.filter(m=>!(m.role==='ai'&&m.text==='확인하고 있어요…')).slice(-30).map(m=>({...m,img:null}))))}catch(e){}}
 function botSys(){return `너는 '${S.family}' 가족 앱의 AI 비서다. 사용자의 말이나 첨부 이미지(사진, 영수증, 병원 예약 문자 캡처, 초대장 등)를 보고 앱에 반영할 작업을 찾는다.
 반드시 JSON 하나만 출력한다: {"reply":"짧은 한국어 답","actions":[...]}
 actions 항목:
@@ -79,9 +82,9 @@ function botLog(){return BOT.map((m,mi)=>m.role==='user'?`<div class="cm mine"><
       `<span class="row" style="gap:6px"><button class="btn" data-ap="${mi}:${ai}">반영</button>${a.type==='event'||a.type==='tx'?`<button class="btn ghost" data-ae2="${mi}:${ai}">고쳐서 반영</button>`:''}<button class="chip" data-as="${mi}:${ai}">빼기</button></span>`}</div>`}).join('')}</div></div>`).join('')
   ||(me().role==='child'?`<div class="msg ai" style="max-width:100%">말·글·사진·파일로 알려 주시면 일정·회비·공지·앨범·투표에 반영하고, 앱에 있는 내용도 찾아 드립니다.<br><br>예) "다음 주 토요일 6시 가족 외식 잡아줘"<br>예) "김장 언제였지?"<br>예) 영수증 사진 + "어머니 생신 케이크"</div>`
     :`<div class="msg ai" style="max-width:100%">말·글·사진으로 알려 주시면 일정·공지·앨범·투표에 반영하고, 앱에 있는 내용도 찾아 드립니다.<br><br>예) "다음 주 토요일 6시 가족 외식 잡아줘"<br>예) "김장 언제였지?"<br>예) 사진 + "할머니 생신 사진 앨범에 올려줘"</div>`)}
-function botSheet(auto){
+function botSheet(auto){botLoad();botSave();
   const sugg=['김장 언제야?','12월 5일 김장 일정 잡아줘',...(me().role==='child'?['케이크 3만5천원 회비에서 썼어']:[]),'토요일, 일요일 중 외식 투표 만들어줘','다음 주 화요일 오전 10시 아버지 병원'];
-  sheet(`<div class="bot"><div class="row between"><h2>AI 비서</h2><span class="small muted">${AIS[aiCfg().def][0]} · 대화방과 별도</span></div>
+  sheet(`<div class="bot"><div class="row between"><h2>AI 비서</h2><span class="row" style="gap:6px"><span class="small muted">${AIS[aiCfg().def][0]}</span>${BOT.length?'<button class="chip" id="bnew">새 대화</button>':''}</span></div>
     <div class="blog" id="blog">${botLog()}</div>
     <div class="sugg">${sugg.map(s=>`<button class="chip" data-s="${esc(s)}">${esc(s)}</button>`).join('')}</div>
     ${BOTFILE?`<div class="row" style="flex-wrap:nowrap">${isImg(BOTFILE)?`<img src="${BOTFILE.data}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:8px">`:`<span class="fic">${IC.clip}</span>`}<span class="small" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(BOTFILE.name)} · ${fsize(BOTFILE.size)}</span><button class="chip" id="bimgx">빼기</button></div>`:''}
@@ -97,6 +100,7 @@ function botSheet(auto){
     catch(e){const r=localIntent(t,img);m.text=r.reply;m.actions=r.actions;m.found=r.found;m.note='AI 연결 전이라 기본 해석으로 처리했어요'}
     m.img=img;botSheet()};
   document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>send(b.dataset.s));
+  if($('#bnew'))$('#bnew').onclick=()=>{BOT=[];BOTFILE=null;botSave();botSheet()};
   if($('#bimgx'))$('#bimgx').onclick=()=>{BOTFILE=null;botSheet()};
   const at=s=>{const [mi,ai]=s.split(':').map(Number);return [BOT[mi],BOT[mi].actions[ai]]};
   document.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>{const [m,a]=at(b.dataset.ap);a._msg=applyAct(a,m.img);a._st='done';save();botSheet()});

@@ -28,6 +28,19 @@ service cloud.firestore {
     match /families/hanssine/alerts/{id} {
       allow read, create: if member();
     }
+    // 따로 만든 대화방: 방 멤버만 방 정보와 메시지를 보고 씀
+    function myMember() { return get(devPath()).data.member; }
+    function roomPath(rid) { return /databases/$(db)/documents/families/hanssine/rooms/$(rid); }
+    match /families/hanssine/rooms/{rid} {
+      allow read: if member() && myMember() in resource.data.members;
+      allow create: if member() && request.resource.data.by == myMember() && myMember() in request.resource.data.members;
+      allow update: if member() && myMember() in resource.data.members;
+      allow delete: if member() && (resource.data.by == myMember() || admin());
+      match /msgs/{mid} {
+        allow read: if member() && myMember() in get(roomPath(rid)).data.members;
+        allow create: if member() && request.resource.data.by == myMember() && myMember() in get(roomPath(rid)).data.members;
+      }
+    }
     // 폰 등록: 초대 코드가 맞아야 등록. 관리자는 등록 해제 가능
     match /families/hanssine/devices/{uid} {
       allow read: if member() || (signed() && request.auth.uid == uid);

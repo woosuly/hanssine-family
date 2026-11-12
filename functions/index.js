@@ -114,3 +114,21 @@ exports.notifySos = onDocumentCreated('families/hanssine/alerts/{id}', async (ev
     tag: 'sos-' + ev.params.id,
   });
 });
+
+// 따로 만든 대화방: 방 멤버에게만 알림
+exports.notifyRoomMsg = onDocumentCreated('families/hanssine/rooms/{rid}/msgs/{mid}', async (ev) => {
+  const doc = ev.data && ev.data.data();
+  if (!doc) return;
+  let it;
+  try { it = JSON.parse(doc.j); } catch (e) { return; }
+  const roomSnap = await FAM.collection('rooms').doc(ev.params.rid).get();
+  if (!roomSnap.exists) return;
+  const room = roomSnap.data();
+  const {state, members, devices} = await loadFamily();
+  const who = members[it.by];
+  const prefs = state.prefs || {};
+  const targets = devices.filter(d => d.member !== it.by && (room.members || []).includes(d.member)
+    && (prefs[d.member] || {}).noti_chat !== false);
+  const body = it.text || (it.sticker || it.act ? '이모티콘을 보냈어요' : it.img ? '사진을 보냈어요' : it.file ? '파일을 보냈어요' : '메시지를 보냈어요');
+  await send(targets, {k: 'room', id: ev.params.rid, title: clip(`${who ? who.name : '가족'} · ${room.title || '대화방'}`, 60), body: clip(body, 160), tag: 'room-' + ev.params.rid});
+});

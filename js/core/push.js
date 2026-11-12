@@ -26,15 +26,16 @@ function bindPushRow(after){
     toast(r==='granted'?'알림을 켰어요':r==='denied'?'알림이 차단되었어요':'알림을 켜지 못했어요');after&&after()};
   if($('#pushtest'))$('#pushtest').onclick=pushTest}
 // 알림을 눌러 들어왔을 때 해당 화면으로
-function openFromPush(k){if(!ME||!mem(ME))return;close();
-  if(me().role==='parent'){SR_TAB=k==='chat'?'talk':'home';if(k==='chat')SCHAT='fam'}
-  else TAB={chat:'talk',photos:'album',events:'cal',notices:'home',sos:'home'}[k]||TAB;
+function openFromPush(k,id){if(!ME||!mem(ME))return;close();
+  const room=k==='room'&&id;
+  if(me().role==='parent'){SR_TAB=(k==='chat'||room)?'talk':'home';if(k==='chat')SCHAT='fam';if(room){SCHAT='room:'+id;openRoom(id)}}
+  else{TAB={chat:'talk',room:'talk',photos:'album',events:'cal',notices:'home',sos:'home'}[k]||TAB;if(k==='chat'){closeRoom();CROOM=null}if(room)openRoom(id)}
   render()}
-const PUSH_OPEN=(location.search.match(/[?&]open=([a-z]+)/)||[])[1]||'';
+const PUSH_OPEN=(location.search.match(/[?&]open=([a-z]+)/)||[])[1]||'',PUSH_RID=(location.search.match(/[?&]rid=([\w-]+)/)||[])[1]||'';
 function pushAfterBoot(){
-  if(PUSH_OPEN){openFromPush(PUSH_OPEN);try{history.replaceState(null,'',location.pathname)}catch(e){}}
+  if(PUSH_OPEN){openFromPush(PUSH_OPEN,PUSH_RID);try{history.replaceState(null,'',location.pathname)}catch(e){}}
   pushRegister(false);clearNotis()}
 // 앱을 열면 쌓인 알림 정리
 function clearNotis(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.ready.then(r=>r.getNotifications()).then(ns=>ns.forEach(n=>n.close())).catch(()=>{})}
-if('serviceWorker' in navigator){navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type==='open')openFromPush(d.k)});
+if('serviceWorker' in navigator){navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type==='open')openFromPush(d.k,d.id)});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&SYNC.booted)clearNotis()})}

@@ -101,28 +101,38 @@ function sosSheet(){
     if(!LOCAL)famRef().collection('alerts').add({type:'sos',by:ME,ts:Date.now()}).catch(e=>console.warn(e));toast('긴급 문자를 보냅니다')};
   if($('#cl'))$('#cl').onclick=close;
 }
+// 부모님 AI 비서 대화도 이 폰에만 기억, '새 대화 시작'으로 지움
+let SAIWHO=null;
+function srAiLoad(){if(SAIWHO===ME)return;SAIWHO=ME;try{CHAT=JSON.parse(localStorage.getItem('hanssine-sai-'+ME))||[]}catch(e){CHAT=[]}}
+function srAiSave(){try{localStorage.setItem('hanssine-sai-'+ME,JSON.stringify(CHAT.filter(x=>!x.wait).slice(-30)))}catch(e){}}
 function srTalk(){
-  const ai=SCHAT==='ai';
+  const rid=SCHAT.startsWith('room:')?SCHAT.slice(5):null;
+  if(rid&&RLOADED&&!ROOMS.some(r=>r.id===rid)){SCHAT='fam';return srTalk()}
+  if(rid){if(CROOM!==rid)openRoom(rid)}else if(CROOM){closeRoom();CROOM=null}
+  const ai=SCHAT==='ai';if(ai)srAiLoad();
   const log=ai?(CHAT.map((x,i)=>`<div class="msg ${x.role==='user'?'user':x.role==='err'?'err':'ai'}">${esc(x.text)}${x.role==='ai'&&!x.wait?`<button class="tts" data-tts="${i}">읽어 주기</button>`:''}</div>`).join('')
       ||'<div class="msg ai">궁금한 것을 말씀하세요. 가족 일정, 생신, 날씨, 생활 정보를 알려 드립니다.</div>')
-    :((S.chat||[]).slice(-30).map(m=>chatMsgHtml(m)).join('')||'<div class="msg ai">가족에게 하실 말씀을 보내세요.</div>');
-  return `<div class="tseg" id="tseg">${[['fam','가족 대화방'],['ai','AI 비서에게 묻기']].map(([k,n])=>`<button data-v="${k}" class="${SCHAT===k?'on':''}">${n}</button>`).join('')}</div>
+    :(curMsgs().slice(-30).map(m=>chatMsgHtml(m)).join('')||`<div class="msg ai">${rid?esc(roomTitle(rid))+' 방에 하실 말씀을 보내세요.':'가족에게 하실 말씀을 보내세요.'}</div>`);
+  const unr=ROOMS.some(unread);
+  return `<div class="tseg" id="tseg">${[['fam','가족 대화방'],['ai','AI 비서에게 묻기']].map(([k,n])=>`<button data-v="${k}" class="${SCHAT===k?'on':''}">${n}</button>`).join('')}${ROOMS.length?`<button data-v="rooms" class="${rid?'on':''}">${rid?esc(roomTitle(rid)):'다른 대화방'}${unr&&!rid?' <i class="rdot"></i>':''}</button>`:''}</div>
     <div class="tlog" id="tlog">${log}</div>
-    ${ai?'':`<div class="typing big" id="typing">${typingText()}</div><div id="rbar">${replyBarHtml()}</div>`}
+    ${ai&&CHAT.length?'<button class="chip" id="snew" style="align-self:flex-end">새 대화 시작</button>':''}
+    ${ai?'':`${rid?'':`<div class="typing big" id="typing">${typingText()}</div>`}<div id="rbar">${replyBarHtml()}</div>`}
     <div class="tin"><textarea id="tq" rows="2" placeholder="여기에 글로 쓰거나, 아래 '음성 입력'을 누르세요"></textarea>
       <div class="tbtns ${ai?'':'three'}">${ai?'':'<button class="stkbig" id="tstk">이모티콘</button>'}<button class="micbig" id="tmic">${MICSVG}음성 입력</button><button class="sendbig" id="tsend">보내기</button></div></div>`;
 }
 function bindSrTalk(){
   const box=$('#tlog');box.scrollTop=box.scrollHeight;
-  segBind('#tseg',v=>{SCHAT=v;renderSenior()});
+  segBind('#tseg',v=>{if(v==='rooms'){srRoomList();return}SCHAT=v;renderSenior()});
   document.querySelectorAll('[data-tts]').forEach(b=>b.onclick=()=>speak(CHAT[+b.dataset.tts].text));
   const send=async()=>{const q=$('#tq').value.trim();if(!q){toast('먼저 쓰거나 말씀해 주세요');return}
-    if(SCHAT==='fam'){postChat(q).then(()=>{if(SR_TAB==='talk')renderSenior()});renderSenior();return}
+    if(SCHAT!=='ai'){postChat(q).then(()=>{if(SR_TAB==='talk')renderSenior()});renderSenior();return}
     const hist=[...CHAT.filter(x=>x.role==='user'||(x.role==='ai'&&!x.wait)).slice(-6),{role:'user',text:q}];
     CHAT.push({role:'user',text:q},{role:'ai',text:'생각하고 있어요…',wait:true});renderSenior();
-    try{const a=await callAI(aiSystem(),hist);CHAT[CHAT.length-1]={role:'ai',text:a};if(SR_TAB==='talk')renderSenior();speak(a)}
+    try{const a=await callAI(aiSystem(),hist);CHAT[CHAT.length-1]={role:'ai',text:a};srAiSave();if(SR_TAB==='talk')renderSenior();speak(a)}
     catch(e){CHAT[CHAT.length-1]={role:'err',text:aiErr(e)};if(SR_TAB==='talk')renderSenior()}};
-  $('#tsend').onclick=send;bindMsgs(box);bindReplyBar();
+  $('#tsend').onclick=send;bindMsgs(box);if($('#snew'))$('#snew').onclick=()=>{CHAT=[];srAiSave();renderSenior()};bindReplyBar();
+  if(CROOM)markRead(CROOM);
   if(SCHAT==='fam'){$('#tq').oninput=e=>typingPing(!!e.target.value.trim());$('#tq').onblur=()=>typingPing(false)}
   if($('#tstk'))$('#tstk').onclick=()=>{sheet(`<h2>이모티콘 보내기</h2><p class="muted" style="font-size:.85em;margin:.2em 0 .6em">누르면 바로 가족 대화방에 보내집니다</p>
     <div class="sr-h2">움직이는 이모티콘</div><div class="actbig">${ACTS.map(a=>`<button data-act="${a[0]}"><span>${a[2]}</span><small>${a[1]}</small></button>`).join('')}</div>

@@ -20,8 +20,11 @@ function startFx(cv,kind){stopFx();if(!cv||kind==='off')return;try{if(matchMedia
     FXRAF=requestAnimationFrame(step)};
   step()}
 function whoOf(by){if(by.startsWith('ai:')){const a=AIS[by.slice(3)];return {name:a[0],color:a[1],ai:true}}const m=mem(by);return m?{name:m.name,color:m.color}:{name:'?',color:'#888'}}
-function chatLogHtml(){return (S.chat||[]).slice(-60).map(m=>chatMsgHtml(m)).join('')||'<div class="muted small" style="text-align:center;padding:20px">첫 메시지를 보내 보세요</div>'}
-function bindSay(root){root.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>{const m=(S.chat||[]).find(x=>x.id===b.dataset.say);if(m)speak(m.text)})}
+// 지금 보고 있는 방의 메시지 (CROOM 없으면 가족 대화방)
+const curMsgs=()=>CROOM?RMSG:(S.chat||[]);
+const findMsg=id=>curMsgs().find(x=>x.id===id);
+function chatLogHtml(){return curMsgs().slice(-60).map(m=>chatMsgHtml(m)).join('')||'<div class="muted small" style="text-align:center;padding:20px">첫 메시지를 보내 보세요</div>'}
+function bindSay(root){root.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>{const m=findMsg(b.dataset.say);if(m)speak(m.text)})}
 let DRAFT='';
 function attHtml(m){const f=m.file;if(m.img)return `<button class="attimg" data-view="${m.id}"><img src="${m.img}" alt="사진"></button>`;
   if(!f)return '';if(isImg(f))return `<button class="attimg" data-view="${m.id}"><img src="${f.data}" alt="${esc(f.name)}"></button>`;
@@ -42,21 +45,21 @@ function msgSnip(m){return m.text?m.text.replace(/\s+/g,' ').slice(0,40):m.stick
 function replyBarHtml(){return CREPLY?`<div class="rbar"><span class="rbt"><b>${esc(whoOf(CREPLY.by).name)}에게 답장</b><span class="small muted">${esc(CREPLY.t)}</span></span><button class="chip" id="rbx">취소</button></div>`:''}
 function bindReplyBar(){if($('#rbx'))$('#rbx').onclick=()=>{CREPLY=null;showReplyBar()}}
 function showReplyBar(){const el=$('#rbar');if(!el)return;el.innerHTML=replyBarHtml();bindReplyBar()}
-function setReply(id){const m=(S.chat||[]).find(x=>x.id===id);if(!m)return;CREPLY={id:m.id,by:m.by,t:msgSnip(m)};close();showReplyBar();const q=$('#kq')||$('#tq');if(q)q.focus()}
+function setReply(id){const m=findMsg(id);if(!m)return;CREPLY={id:m.id,by:m.by,t:msgSnip(m)};close();showReplyBar();const q=$('#kq')||$('#tq');if(q)q.focus()}
 function jumpTo(id){const el=document.getElementById('cm-'+id);if(!el){toast('예전 메시지라 화면에 없어요');return}
   el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1400)}
 // 입력 중 표시: 입력하는 동안 3초에 한 번 알리고, 받은 쪽은 7초 안에 소식이 없으면 지움
 const TYPING={};let TYPE_T=0,TYPE_ON=false;
-function typingPing(on){if(LOCAL||!SYNC.live||!ME)return;const now=Date.now();if(on===TYPE_ON&&(!on||now-TYPE_T<3000))return;
+function typingPing(on){if(LOCAL||!SYNC.live||!ME||(on&&CROOM))return;const now=Date.now();if(on===TYPE_ON&&(!on||now-TYPE_T<3000))return;
   TYPE_ON=on;TYPE_T=now;famRef().collection('state').doc('typing_'+ME).set({on,at:now}).catch(()=>{})}
 function typingGot(k,d){if(d&&d.on&&Math.abs(Date.now()-(d.at||0))>15000)return;TYPING[k]={on:!!(d&&d.on),rx:Date.now()};typingUi()}
 function typingText(){const now=Date.now(),ns=Object.entries(TYPING).filter(([k,v])=>k!==ME&&v.on&&now-v.rx<7000).map(([k])=>(mem(k)||{}).name).filter(Boolean);return ns.length?ns.join(', ')+' 입력 중…':''}
 function typingUi(){const el=$('#typing');if(el)el.textContent=typingText()}
 setInterval(typingUi,2000);
-function postMsg(o){S.chat=S.chat||[];if(CREPLY){o={...o,reply:CREPLY};CREPLY=null;showReplyBar()}typingPing(false);const m={id:uid(),by:ME,ts:Date.now(),...o};S.chat.push(m);save();return m}
+function postMsg(o){if(CROOM)return roomPost(o);S.chat=S.chat||[];if(CREPLY){o={...o,reply:CREPLY};CREPLY=null;showReplyBar()}typingPing(false);const m={id:uid(),by:ME,ts:Date.now(),...o};S.chat.push(m);save();return m}
 async function postChat(text,stk){
   postMsg(stk?{sticker:stk}:{text});
-  const at=text&&text.match(/@(Gemini|GPT|Claude)/i);if(!at)return;
+  const at=!CROOM&&text&&text.match(/@(Gemini|GPT|Claude)/i);if(!at)return;
   const prov={gemini:'gemini',gpt:'openai',claude:'claude'}[at[1].toLowerCase()];
   const r={id:uid(),by:'ai:'+prov,ts:Date.now(),text:'생각하고 있어요…',wait:true};S.chat.push(r);refreshChat();
   const hist=S.chat.filter(x=>x.text&&!x.wait).slice(-10).map(x=>({role:x.by.startsWith('ai:')?'ai':'user',text:(x.by.startsWith('ai:')?'':whoOf(x.by).name+': ')+x.text.replace(/@\S+\s?/,'')}));
@@ -64,34 +67,37 @@ async function postChat(text,stk){
 function refreshChat(){const box=$('#clog');if(box){box.innerHTML=chatLogHtml();box.scrollTop=box.scrollHeight;bindMsgs(box)}}
 function talkView(){
   const fx=fxKind();
-  return `<div class="talk" id="talk"><div class="row between"><h2>가족 대화</h2><button class="chip" id="fxc">효과 · ${FXS.find(x=>x[0]===pref('fx','off'))[1]}${pref('fx','off')==='auto'&&fx!=='off'?`(${FXS.find(x=>x[0]===fx)[1]})`:''}</button></div>
+  if(RLOADED&&CROOM&&!ROOMS.some(r=>r.id===CROOM)){closeRoom();CROOM=null}const room=CROOM&&ROOMS.find(r=>r.id===CROOM);
+  return `<div class="talk" id="talk">${roomBarHtml()}<div class="row between"><h2>${room?esc(room.title):'가족 대화'}</h2>${room?`<button class="chip" id="rset">방 설정</button>`:`<button class="chip" id="fxc">효과 · ${FXS.find(x=>x[0]===pref('fx','off'))[1]}${pref('fx','off')==='auto'&&fx!=='off'?`(${FXS.find(x=>x[0]===fx)[1]})`:''}</button>`}</div>
+    ${room?`<div class="small muted rmem">${esc(roomMembers(room))}</div>`:''}
     <div class="clogw"><div class="clog" id="clog">${chatLogHtml()}</div><canvas class="fxc" id="fxcv"></canvas></div>
-    <div class="typing" id="typing">${typingText()}</div><div id="rbar">${replyBarHtml()}</div>
+    ${room?'':`<div class="typing" id="typing">${typingText()}</div>`}<div id="rbar">${replyBarHtml()}</div>
     <div class="atpick" id="atpick" hidden>${Object.entries(AIS).filter(([k])=>(aiCfg().keys||{})[k]||k===aiCfg().def).map(([k,[n,c]])=>`<button data-at="${n}"><span class="av aiav" style="background:${c}">AI</span>${n}${aiCfg().def===k?' <span class="small muted">기본</span>':''}</button>`).join('')}</div>
     <div class="emopanel" id="emop" hidden>${emoPanel()}</div>
-    ${composer('k',{emoji:true,trans:false,ph:'메시지 · @로 AI 부르기',draft:DRAFT})}</div>`;
+    ${composer('k',{emoji:true,trans:false,ph:room?'메시지':'메시지 · @로 AI 부르기',draft:DRAFT})}</div>`;
 }
 function bindTalk(){
   const talk=$('#talk');talk.style.height=Math.max(320,window.innerHeight/scale()-150)+'px';
   const box=$('#clog');box.scrollTop=box.scrollHeight;bindMsgs(box);
   startFx($('#fxcv'),fxKind());const pick=$('#atpick');
-  bindReplyBar();
-  const c=bindComposer('k',{onInput:v=>{DRAFT=v;pick.hidden=!/@\w*$/.test(v);typingPing(!!v.trim()&&!/^@/.test(v.trim()))},onPlus:()=>{$('#emop').hidden=true},
+  bindReplyBar();bindRoomBar();if(CROOM)markRead(CROOM);
+  const c=bindComposer('k',{onInput:v=>{DRAFT=v;pick.hidden=!!CROOM||!/@\w*$/.test(v);typingPing(!!v.trim()&&!/^@/.test(v.trim()))},onPlus:()=>{$('#emop').hidden=true},
     onSend:t=>{DRAFT='';pick.hidden=true;postChat(t);refreshChat()},
     onFile:f=>{postMsg({file:f});refreshChat()},onEmoji:()=>{$('#emop').hidden=!$('#emop').hidden},onTrans:t=>trSendSheet(t)});
   c.q.addEventListener('blur',()=>typingPing(false));
   document.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{c.q.value=c.q.value.replace(/@\w*$/,'')+'@'+b.dataset.at+' ';DRAFT=c.q.value;pick.hidden=true;c.q.focus()});
   bindEmo(id=>{postChat('',id);$('#emop').hidden=true;refreshChat()},e=>{c.q.value+=e;DRAFT=c.q.value},id=>{postMsg({act:id});$('#emop').hidden=true;refreshChat();playAct(id)});
-  $('#fxc').onclick=()=>{sheet(`<div class="stack"><h2>대화 배경 효과</h2><div class="glist2">${FXS.map(([k,n])=>`<button data-fx="${k}" class="${pref('fx','off')===k?'on':''}">${n}${k==='auto'?' <span class="small muted">(오늘 날씨·계절에 맞춤)</span>':''}</button>`).join('')}</div></div>`);
+  if($('#rset'))$('#rset').onclick=()=>roomForm(ROOMS.find(r=>r.id===CROOM));
+  if($('#fxc'))$('#fxc').onclick=()=>{sheet(`<div class="stack"><h2>대화 배경 효과</h2><div class="glist2">${FXS.map(([k,n])=>`<button data-fx="${k}" class="${pref('fx','off')===k?'on':''}">${n}${k==='auto'?' <span class="small muted">(오늘 날씨·계절에 맞춤)</span>':''}</button>`).join('')}</div></div>`);
     document.querySelectorAll('[data-fx]').forEach(b=>b.onclick=()=>{setPref('fx',b.dataset.fx);close();renderMain()})};
 }
 const TRM={};
 function bindMsgs(root){bindSay(root);
   root.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>playAct(b.dataset.play));
-  root.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{const m=(S.chat||[]).find(x=>x.id===b.dataset.view);if(m)viewFile(m.file||{data:m.img,type:'image/jpeg',name:'사진'})});
+  root.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{const m=findMsg(b.dataset.view);if(m)viewFile(m.file||{data:m.img,type:'image/jpeg',name:'사진'})});
   root.querySelectorAll('[data-mid]').forEach(b=>b.onclick=e=>{if(e.target.closest('.tts'))return;msgMenu(b.dataset.mid)});
   root.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>jumpTo(b.dataset.jump))}
-function msgMenu(id){const m=(S.chat||[]).find(x=>x.id===id);if(!m||m.wait)return;
+function msgMenu(id){const m=findMsg(id);if(!m||m.wait)return;
   if(!m.text){sheet(`<div class="stack"><div class="card small muted">${esc(whoOf(m.by).name)} · ${esc(msgSnip(m))}</div><div class="actions"><button class="btn" id="mrp">답장</button></div></div>`);$('#mrp').onclick=()=>setReply(id);return}
   const ko=/[가-힣]/.test(m.text),to=ko?pref('chatTr','en'):'ko',r=TRM[id+to];
   sheet(`<div class="stack"><div class="card" style="white-space:pre-wrap">${esc(m.text)}</div>

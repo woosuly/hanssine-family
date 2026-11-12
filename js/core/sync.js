@@ -64,7 +64,7 @@ function startListen(){stopSync();return new Promise(res=>{const done=()=>{if(SY
 function fixOldDues(){const d=S.dues;if(!d)return;const untouched=!(d.tx||[]).length&&!(d.accounts||[]).length&&!Object.values(d.paid||{}).some(m=>Object.values(m||{}).some(Boolean));
   if(untouched&&d.mode==='monthly'&&d.monthly===50000&&d.treasurer==='h1'){S.dues={mode:'',monthly:0,perHouse:{},treasurer:'',paid:{},accounts:[],tx:[]};save()}}
 function finishBoot(){if(!SYNC.cache.master){const keep=S.trPacks;S=cleanSeed();S.trPacks=keep||{};S.master.member=ME;flush()}else fixOldDues();
-  SYNC.booted=true;render();pushAfterBoot()}
+  SYNC.booted=true;roomsListen();render();pushAfterBoot()}
 
 async function boot(){
   if(LOCAL){render();return}
@@ -92,7 +92,7 @@ async function joinAs(mid,phone,code){
   ME=mid;if(!SYNC.live)await startListen();
   if(!SYNC.cache.master){finishBoot()}else{SYNC.booted=true}
   const m=mem(mid);if(m&&m.phone!==phone){m.phone=phone;save()}
-  render();pushRegister(false)}
+  roomsListen();render();pushRegister(false)}
 
 // 관리자: 초대 코드 · 등록된 폰
 async function loadDevices(){const box=$('#dvin');if(!box)return;

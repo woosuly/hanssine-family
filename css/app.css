@@ -637,3 +637,12 @@ body.dragging{user-select:none;-webkit-user-select:none}
 .cm.flash .bub,.cm.flash .stk{outline:2px solid var(--pine);outline-offset:2px;transition:outline-color .3s}
 .tlog .rq{font-size:.8em}
 .tlog .rq b{font-size:1em}
+/* 대화방 고르기 줄 */
+.roombar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 8px;margin-top:4px}
+.roombar::-webkit-scrollbar{display:none}
+.rchip{flex:none;position:relative;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;font-size:14px}
+.rchip.on{background:var(--pine);border-color:var(--pine);color:var(--pine-ink)}
+.rchip.rnew{border-style:dashed;color:var(--pine)}
+.rdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-left:5px;vertical-align:middle}
+.rmem{margin:-4px 0 6px}
+.tseg>button:nth-child(3){grid-column:1/-1}
