@@ -1,0 +1,18 @@
+{
+  "appId": "com.hanssine.family",
+  "appName": "한씨네",
+  "webDir": "www",
+  "server": {
+    "url": "https://woosuly.github.io/hanssine-family/",
+    "androidScheme": "https",
+    "errorPath": "offline.html"
+  },
+  "android": {
+    "backgroundColor": "#F3F4EF"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}
