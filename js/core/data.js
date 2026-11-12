@@ -78,7 +78,8 @@ const mem=id=>S.members.find(m=>m.id===id);
 const me=()=>mem(ME);
 const canSee=item=>{const r=me().role;if(item.scope==='custom')return item.by===ME||(item.who||[]).includes(ME);return item.scope==='all'||(item.scope==='adults'&&r!=='grand')||(item.scope==='kids'&&r==='child')};
 const ini=m=>m.name.slice(0,1);
-const av=(m,cls='')=>`<span class="av ${cls}" style="background:${m.color}">${esc(ini(m))}</span>`;
+const avBg=m=>m.photo?`background:${m.color} center/cover no-repeat url(&quot;${String(m.photo).replace(/["'\\()]/g,encodeURIComponent)}&quot;)`:`background:${m.color}`;
+const av=(m,cls='')=>`<span class="av ${cls}" style="${avBg(m)}">${m.photo?'':esc(ini(m))}</span>`;
 const byLabel=m=>m.role==='parent'||HOUSES[m.house]===m.name?m.name:HOUSES[m.house]+' '+m.name;
 function bdText(m){const b=m.bd;if(!b||!b.m)return '미입력';return (b.cal==='lunar'?'음력 ':'양력 ')+b.m+'.'+b.d+(b.cal==='lunar'&&b.leap?' (윤달생, 평달로 지냄)':'')}
 function bdIn(m,y){const b=m.bd;if(!b||!b.m)return null;return b.cal==='lunar'?L2S(y,b.m,b.d):new Date(y,b.m-1,b.d)}

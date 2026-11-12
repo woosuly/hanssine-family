@@ -675,3 +675,25 @@ body.kbopen .tabbar{display:none}
 .tabbar .in{padding:4px 6px;gap:4px}
 .tabbar button{border-radius:12px;margin:2px 0}
 .tabbar button.on{background:var(--pine-soft)}
+
+/* 방 메뉴·안내 줄·프로필 */
+.rchip .rx{display:inline-grid;place-items:center;width:18px;height:18px;margin:0 -6px 0 6px;border-radius:50%;background:rgba(255,255,255,.25);font-style:normal;font-size:11px;line-height:1;vertical-align:1px}
+.ibtn.rmenu{width:38px;height:38px}
+.ibtn.rmenu svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2}
+.rpop{padding:4px;gap:0;min-width:170px}
+.rpop button{border:0;background:none;text-align:left;padding:11px 14px;border-radius:10px;font-size:15px;color:var(--ink)}
+.rpop button:active{background:var(--pine-soft)}
+.rpop button.red{color:var(--red)}
+.sysmsg{display:flex;justify-content:center;margin:4px 0}
+.sysmsg span{background:var(--line);color:var(--muted);font-size:12px;padding:3px 12px;border-radius:999px;max-width:90%;text-align:center}
+.cm button.av{border:0;padding:0;cursor:pointer}
+.cm button.cmn{border:0;background:none;padding:0;text-align:left;cursor:pointer}
+.av.big{width:84px;height:84px;font-size:32px}
+.av.huge{width:150px;height:150px;font-size:56px}
+.prof{align-items:center;text-align:center}
+.prof .card{width:100%;text-align:left}
+.prof .actions{justify-content:center;flex-wrap:wrap}
+.profph{border:0;background:none;padding:0}
+.profn{font-size:24px;font-weight:700}
+.ppl{display:flex!important;align-items:center;gap:10px}
+.prof a.btn{text-decoration:none}

@@ -85,7 +85,10 @@ function bindSet(){
 function memberForm(id){
   const m=mem(id);const b=m.bd||{m:'',d:'',cal:'solar',leap:false};const adm=isAdmin();
   if(!adm&&id!==ME)return;
+  let PH=m.photo||'';
   sheet(`<div class="stack"><h2>${id===ME?'내 정보':esc(m.name)+' 정보'}</h2>
+    <div class="row" style="gap:14px;align-items:center"><span id="mphv">${av({...m,photo:PH},'big')}</span>
+      <div class="row" style="gap:6px;flex-wrap:wrap"><label class="btn ghost">사진 고르기<input type="file" accept="image/*" id="mph" hidden></label><button class="btn ghost" id="mphx" ${PH?'':'hidden'}>사진 빼기</button></div></div>
     ${adm?`<div class="field"><label for="mn">이름 (부모님 화면에 보이는 호칭)</label><input id="mn" value="${esc(m.name)}" maxlength="8"></div>`:`<div><b>${esc(byLabel(m))}</b></div>`}
     <div class="field"><label>생일 기준</label><div class="seg" id="cal"><button data-v="solar" class="${b.cal!=='lunar'?'on':''}">양력</button><button data-v="lunar" class="${b.cal==='lunar'?'on':''}">음력</button></div></div>
     <div class="row" style="flex-wrap:nowrap"><div class="field" style="flex:1"><label for="bm">월</label><input id="bm" inputmode="numeric" value="${b.m||''}"></div><div class="field" style="flex:1"><label for="bdd">일</label><input id="bdd" inputmode="numeric" value="${b.d||''}"></div></div>
@@ -99,6 +102,26 @@ function memberForm(id){
     const y=today0().getFullYear();const f=yy=>cal==='lunar'?L2S(yy,mm,dd):new Date(yy,mm-1,dd);
     $('#bprev').innerHTML=`${y}년 <b>${md(f(y))}</b> · ${y+1}년 <b>${md(f(y+1))}</b>${cal==='lunar'?' (음력 → 양력 변환)':''}`};
   segBind('#cal',v=>{cal=v;pv()});$('#bm').oninput=pv;$('#bdd').oninput=pv;pv();
-  $('#sv').onclick=()=>{if($('#mn'))m.name=$('#mn').value.trim()||m.name;const mm=+$('#bm').value,dd=+$('#bdd').value;
+  const showPh=()=>{$('#mphv').innerHTML=av({...m,photo:PH},'big');$('#mphx').hidden=!PH};
+  $('#mph').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=await shrink((await readFile(f)).data,480);toast('사진 올리는 중…');PH=await upMedia(d,'profile.jpg');showPh()}catch(er){upFail(er)}};
+  $('#mphx').onclick=()=>{PH='';showPh()};
+  $('#sv').onclick=()=>{if(PH!==(m.photo||'')){if(m.photo)delMedia(m.photo);if(PH)m.photo=PH;else delete m.photo}if($('#mn'))m.name=$('#mn').value.trim()||m.name;const mm=+$('#bm').value,dd=+$('#bdd').value;
     m.bd=mm&&dd?{m:mm,d:dd,cal,leap:cal==='lunar'&&$('#leap').checked}:null;if($('#ph'))m.phone=$('#ph').value.trim();save();toast('저장했어요');close();renderMain()};
+}
+
+// 가족 한 사람 정보 크게 보기 (대화창에서 사진·이름을 누르면)
+function profileSheet(id){const m=mem(id);if(!m)return;const canEdit=id===ME||isAdmin();
+  const ph=String(m.phone||'').trim(),tel=ph.replace(/[^0-9+]/g,'');
+  sheet(`<div class="stack prof"><button class="profph" id="pfv" ${m.photo?'':'disabled'}>${av(m,'huge')}</button>
+    <div class="profn">${esc(m.name)}</div><div class="muted">${esc(byLabel(m))}</div>
+    <div class="card stack" style="gap:6px"><div class="row between"><span class="muted">생일</span><b>${esc(bdText(m))}</b></div>
+      ${ph?`<div class="row between"><span class="muted">전화</span><b>${esc(ph)}</b></div>`:''}</div>
+    <div class="actions">${tel&&id!==ME?`<a class="btn" href="tel:${tel}">전화 걸기</a>`:''}${id!==ME&&roomOn()?'<button class="btn ghost" id="pf1">1:1 대화</button>':''}${canEdit?'<button class="btn ghost" id="pfe">정보·사진 수정</button>':''}</div></div>`);
+  if(m.photo)$('#pfv').onclick=()=>viewFile({data:m.photo,type:'image/jpeg',name:m.name});
+  if($('#pfe'))$('#pfe').onclick=()=>memberForm(id);
+  if($('#pf1'))$('#pf1').onclick=async()=>{const ex=ROOMS.find(r=>(r.members||[]).length===2&&r.members.includes(ME)&&r.members.includes(id));
+    if(ex){close();if(me().role==='parent'){SCHAT='room:'+ex.id;openRoom(ex.id);renderSenior()}else{TAB='talk';setRoom(ex.id)}return}
+    try{const nr={title:`${(mem(ME)||{}).name} · ${m.name}`,members:[ME,id],by:ME,ts:Date.now(),last:null};const d=await roomsRef().add(nr);
+      if(!ROOMS.some(x=>x.id===d.id))ROOMS.unshift({id:d.id,...nr});close();
+      if(me().role==='parent'){SCHAT='room:'+d.id;openRoom(d.id);renderSenior()}else{TAB='talk';setRoom(d.id)}}catch(e){console.warn(e);toast('대화방을 만들지 못했어요')}};
 }

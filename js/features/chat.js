@@ -19,7 +19,7 @@ function startFx(cv,kind){stopFx();if(!cv||kind==='off')return;try{if(matchMedia
       if(p.y>H+20*dpr||p.x<-30*dpr||p.x>W+30*dpr)Object.assign(p,mk(false))}
     FXRAF=requestAnimationFrame(step)};
   step()}
-function whoOf(by){if(by.startsWith('ai:')){const a=AIS[by.slice(3)];return {name:a[0],color:a[1],ai:true}}const m=mem(by);return m?{name:m.name,color:m.color}:{name:'?',color:'#888'}}
+function whoOf(by){if(by.startsWith('ai:')){const a=AIS[by.slice(3)];return {name:a[0],color:a[1],ai:true}}const m=mem(by);return m?{name:m.name,color:m.color,photo:m.photo}:{name:'?',color:'#888'}}
 // 지금 보고 있는 방의 메시지 (CROOM 없으면 가족 대화방)
 const curMsgs=()=>CROOM?RMSG:(S.chat||[]);
 const findMsg=id=>curMsgs().find(x=>x.id===id);
@@ -31,14 +31,14 @@ function attHtml(m){const f=m.file;if(m.img)return `<button class="attimg" data-
   if(isVid(f))return `<video class="attvid" src="${f.data}" controls preload="metadata"></video>`;
   if(isAud(f))return `<audio src="${f.data}" controls></audio>`;
   return `<button class="attfile" data-view="${m.id}"><span class="fic">${IC.clip}</span><span><b>${esc(f.name)}</b><span class="small muted">${fsize(f.size)}</span></span></button>`}
-function chatMsgHtml(m){const mine=m.by===ME,w=whoOf(m.by);const a=m.act&&ACTS.find(x=>x[0]===m.act);
+function chatMsgHtml(m){if(m.sys)return `<div class="sysmsg" id="cm-${esc(m.id)}"><span>${esc(m.text)}</span></div>`;const mine=m.by===ME,w=whoOf(m.by);const a=m.act&&ACTS.find(x=>x[0]===m.act);
   const body=m.del?`<div class="bub deleted ${mine?'mine':''}">삭제된 메시지입니다</div>`:a?`<button class="actmsg" data-play="${a[0]}"><span class="ae">${a[2]}</span><span><b>${a[1]}</b><span class="small muted">눌러서 다시 보기</span></span></button>`
     :m.sticker?`<img class="stk" src="${sticker(m.sticker)}" alt="이모티콘" data-mid="${esc(m.id)}">`
     :(m.img||m.file)?attHtml(m)+(m.text?`<div class="bub ${mine?'mine':''}">${esc(m.text)}</div>`:'')
     :`<div class="bub ${mine?'mine':''} ${w.ai?'aib':''}" data-mid="${esc(m.id)}">${esc(m.text)}${m.orig?`<span class="orig">${esc(m.orig)}</span>`:''}${w.ai&&!m.wait?`<button class="tts" data-say="${esc(m.id)}">읽어 주기</button>`:''}</div>`;
   const rq=m.reply?`<button class="rq" data-jump="${esc(m.reply.id)}"><b>${esc(whoOf(m.reply.by).name)}</b> ${esc(m.reply.t)}</button>`:'';
-  return `<div class="cm ${mine?'mine':''}" id="cm-${esc(m.id)}">${mine?'':`<span class="av ${w.ai?'aiav':''}" style="background:${w.color}">${w.ai?'AI':esc(w.name.slice(0,1))}</span>`}
-    <div class="cmb">${mine?'':`<span class="cmn">${esc(w.name)}</span>`}${rq}${body}<span class="cmt">${rcHtml(m)}${m.edited&&!m.del?'<span class="edtag">수정됨</span>':''}${hhmm(m.ts)}</span></div></div>`}
+  return `<div class="cm ${mine?'mine':''}" id="cm-${esc(m.id)}">${mine?'':w.ai?`<span class="av aiav" style="background:${w.color}">AI</span>`:`<button class="av" data-prof="${esc(m.by)}" style="${avBg(w)}" aria-label="${esc(w.name)} 정보">${w.photo?'':esc(w.name.slice(0,1))}</button>`}
+    <div class="cmb">${mine?'':w.ai?`<span class="cmn">${esc(w.name)}</span>`:`<button class="cmn" data-prof="${esc(m.by)}">${esc(w.name)}</button>`}${rq}${body}<span class="cmt">${rcHtml(m)}${m.edited&&!m.del?'<span class="edtag">수정됨</span>':''}${hhmm(m.ts)}</span></div></div>`}
 // 답장: 말풍선 메뉴에서 '답장' → 입력창 위에 원래 메시지 표시 → 보내면 인용과 함께 저장
 let CREPLY=null;
 function msgSnip(m){return m.text?m.text.replace(/\s+/g,' ').slice(0,40):m.sticker?'이모티콘':m.act?'움직이는 이모티콘':m.img?'사진':m.file?(isImg(m.file)?'사진':isVid(m.file)?'동영상':'파일'):''}
@@ -68,7 +68,7 @@ function refreshChat(){const box=$('#clog');if(box){box.innerHTML=chatLogHtml();
 function talkView(){
   const fx=fxKind();
   if(RLOADED&&CROOM&&!ROOMS.some(r=>r.id===CROOM)){closeRoom();CROOM=null}const room=CROOM&&ROOMS.find(r=>r.id===CROOM);
-  return `<div class="talk" id="talk">${roomBarHtml()}<div class="row between"><h2>${room?esc(room.title):'가족 대화'}</h2>${room?`<button class="chip" id="rset">방 설정</button>`:`<button class="chip" id="fxc">효과 · ${FXS.find(x=>x[0]===pref('fx','off'))[1]}${pref('fx','off')==='auto'&&fx!=='off'?`(${FXS.find(x=>x[0]===fx)[1]})`:''}</button>`}</div>
+  return `<div class="talk" id="talk">${roomBarHtml()}<div class="row between"><h2>${room?esc(room.title):'가족 대화'}</h2>${room?`<button class="ibtn rmenu" id="rset" aria-label="방 메뉴"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>`:`<button class="chip" id="fxc">효과 · ${FXS.find(x=>x[0]===pref('fx','off'))[1]}${pref('fx','off')==='auto'&&fx!=='off'?`(${FXS.find(x=>x[0]===fx)[1]})`:''}</button>`}</div>
     ${room?`<div class="small muted rmem">${esc(roomMembers(room))}</div>`:''}
     <div class="clogw"><div class="clog" id="clog">${chatLogHtml()}</div><canvas class="fxc" id="fxcv"></canvas></div>
     ${room?'':`<div class="typing" id="typing">${typingText()}</div>`}<div id="rbar">${replyBarHtml()}</div>
@@ -87,7 +87,7 @@ function bindTalk(){
   c.q.addEventListener('blur',()=>typingPing(false));
   document.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{c.q.value=c.q.value.replace(/@\w*$/,'')+'@'+b.dataset.at+' ';DRAFT=c.q.value;pick.hidden=true;c.q.focus()});
   bindEmo(id=>{postChat('',id);$('#emop').hidden=true;refreshChat()},e=>{c.q.value+=e;DRAFT=c.q.value},id=>{postMsg({act:id});$('#emop').hidden=true;refreshChat();playAct(id)});
-  if($('#rset'))$('#rset').onclick=()=>roomForm(ROOMS.find(r=>r.id===CROOM));
+  if($('#rset'))$('#rset').onclick=()=>roomMenu(CROOM);
   if($('#fxc'))$('#fxc').onclick=()=>{sheet(`<div class="stack"><h2>대화 배경 효과</h2><div class="glist2">${FXS.map(([k,n])=>`<button data-fx="${k}" class="${pref('fx','off')===k?'on':''}">${n}${k==='auto'?' <span class="small muted">(오늘 날씨·계절에 맞춤)</span>':''}</button>`).join('')}</div></div>`);
     document.querySelectorAll('[data-fx]').forEach(b=>b.onclick=()=>{setPref('fx',b.dataset.fx);close();renderMain()})};
 }
@@ -96,6 +96,7 @@ function bindMsgs(root){bindSay(root);
   root.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>playAct(b.dataset.play));
   root.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{const m=findMsg(b.dataset.view);if(m)viewFile(m.file||{data:m.img,type:'image/jpeg',name:'사진'})});
   root.querySelectorAll('[data-mid]').forEach(b=>b.onclick=e=>{if(e.target.closest('.tts'))return;msgMenu(b.dataset.mid)});
+  root.querySelectorAll('[data-prof]').forEach(b=>b.onclick=e=>{e.stopPropagation();profileSheet(b.dataset.prof)});
   root.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>jumpTo(b.dataset.jump));
   root.querySelectorAll('[data-rc]').forEach(b=>b.onclick=e=>{e.stopPropagation();readSheet(b.dataset.rc)});
   // 길게 누르면 메뉴 (사진·파일·움직이는 이모티콘도 답장·삭제 가능)
@@ -120,7 +121,7 @@ const MI={reply:'<svg viewBox="0 0 24 24"><path d="M10 8L5 12l5 4"/><path d="M5 
   edit:'<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
   del:'<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>'};
 // 말풍선을 누르면 바로 옆에 작은 메뉴
-function msgMenu(id){const m=findMsg(id);if(!m||m.wait||m.del)return;
+function msgMenu(id){const m=findMsg(id);if(!m||m.wait||m.del||m.sys)return;
   const ko=m.text&&/[가-힣]/.test(m.text),to=ko?pref('chatTr','en'):'ko',r=m.text?TRM[id+to]:null;
   const btns=`<button id="mrp">${MI.reply}<span>답장</span></button>${m.text?`<button id="mtr">${IC.trans}<span>번역</span></button><button id="mcp">${IC.copy}<span>복사</span></button><button id="mtt">${IC.spk}<span>읽기</span></button>`:''}${mineBtns(m)}`;
   const tr=r?`<div class="mpop-tr"><div class="tr-t">${esc(r.t)}</div>${r.p?`<div class="tr-p">발음 · ${esc(r.p)}</div>`:''}</div>`:'';

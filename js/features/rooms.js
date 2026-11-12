@@ -38,8 +38,8 @@ function roomPost(o){const m={id:uid(),by:ME,ts:Date.now(),...o};if(CREPLY){m.re
 
 // 대화 화면 위 방 고르기 줄
 function roomBarHtml(){if(!roomOn())return '<div id="roombar" hidden></div>';
-  return `<div class="roombar" id="roombar"><button class="rchip ${CROOM?'':'on'}" data-room="">가족 대화방</button>${ROOMS.map(r=>`<button class="rchip ${CROOM===r.id?'on':''}" data-room="${esc(r.id)}">${esc(r.title)}${unread(r)&&CROOM!==r.id?'<i class="rdot" aria-label="새 메시지"></i>':''}</button>`).join('')}<button class="rchip rnew" id="rnew">+ 새 방</button></div>`}
-function bindRoomBar(){document.querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>setRoom(b.dataset.room||null));if($('#rnew'))$('#rnew').onclick=()=>roomForm(null)}
+  return `<div class="roombar" id="roombar"><button class="rchip ${CROOM?'':'on'}" data-room="">가족 대화방</button>${ROOMS.map(r=>`<button class="rchip ${CROOM===r.id?'on':''}" data-room="${esc(r.id)}">${esc(r.title)}${unread(r)&&CROOM!==r.id?'<i class="rdot" aria-label="새 메시지"></i>':''}${CROOM===r.id?'<i class="rx" data-rx="1" role="button" aria-label="방 나가기">✕</i>':''}</button>`).join('')}<button class="rchip rnew" id="rnew">+ 새 방</button></div>`}
+function bindRoomBar(){document.querySelectorAll('[data-room]').forEach(b=>b.onclick=e=>{if(e.target.closest('[data-rx]')){leaveAsk(b.dataset.room);return}setRoom(b.dataset.room||null)});if($('#rnew'))$('#rnew').onclick=()=>roomForm(null)}
 
 // 방 만들기·설정
 function roomForm(r){const isNew=!r,mine=r&&(r.by===ME||isAdmin());const sel=new Set(r?r.members:[ME]);
@@ -67,3 +67,40 @@ function roomForm(r){const isNew=!r,mine=r&&(r.by===ME||isAdmin());const sel=new
 function srRoomList(){sheet(`<div class="stack"><h2>대화방 고르기</h2>
   <div class="glist2">${ROOMS.map(r=>`<button data-sroom="${esc(r.id)}" class="${SCHAT==='room:'+r.id?'on':''}">${esc(r.title)}${unread(r)?' <span class="small" style="color:var(--red)">새 글</span>':''}<br><span class="small muted">${esc(roomMembers(r))}</span></button>`).join('')}</div></div>`,true);
   document.querySelectorAll('[data-sroom]').forEach(b=>b.onclick=()=>{close();SCHAT='room:'+b.dataset.sroom;openRoom(b.dataset.sroom);renderSenior()})}
+
+// 방 안내 줄(초대·나감): 대화창 가운데 회색 글씨
+function roomSys(rid,text){const m={id:uid(),by:ME,ts:Date.now(),sys:true,text};const ref=roomsRef().doc(rid);
+  if(CROOM===rid)RMSG.push(m);
+  return Promise.all([ref.collection('msgs').doc(m.id).set({j:JSON.stringify(m),ts:m.ts,by:ME}),ref.update({last:{t:text,by:ME,ts:m.ts}})]).catch(e=>console.warn(e))}
+const myName=()=>(mem(ME)||{}).name||'';
+
+// 방 오른쪽 위 ☰ 메뉴
+function roomMenu(rid){const r=ROOMS.find(x=>x.id===rid);if(!r)return;const mine=r.by===ME||isAdmin();
+  $('#layer').innerHTML=`<div class="mpop-dim" id="mdim"><div class="mpop rpop" id="mpop" role="menu">
+    <button id="rmi">초대하기</button><button id="rmw">대화 상대 (${(r.members||[]).length})</button><button id="rmt">방 이름 바꾸기</button>
+    <button id="rml">방 나가기</button>${mine?'<button id="rmd" class="red">방 없애기</button>':''}</div></div>`;BACK=null;
+  const b=$('#rset').getBoundingClientRect(),k=scale()||1,p=$('#mpop');p.style.top=(b.bottom/k+6)+'px';p.style.left=Math.max(8,b.right/k-p.offsetWidth)+'px';
+  $('#mdim').onclick=e=>{if(e.target.id==='mdim')close()};
+  $('#rmi').onclick=()=>inviteSheet(r);$('#rmw').onclick=()=>roomPeople(r);$('#rmt').onclick=()=>renameSheet(r);$('#rml').onclick=()=>leaveAsk(rid);
+  if($('#rmd'))$('#rmd').onclick=()=>{const x=$('#rmd');if(!x.dataset.sure){x.dataset.sure=1;x.textContent='대화가 모두 지워집니다. 한 번 더';return}
+    roomsRef().doc(rid).delete().then(()=>{close();setRoom(null);toast('방을 없앴어요')},()=>toast('없애지 못했어요'))}}
+function inviteSheet(r){const out=S.members.filter(m=>!(r.members||[]).includes(m.id));
+  if(!out.length){close();toast('가족 모두 이 방에 있어요');return}
+  sheet(`<div class="stack"><h2>초대하기</h2><div class="row" style="flex-wrap:wrap;gap:6px">${out.map(m=>`<label class="chip"><input type="checkbox" value="${m.id}"> ${esc(m.name)}</label>`).join('')}</div>
+    <button class="btn block" id="ivok">초대</button></div>`);
+  $('#ivok').onclick=async()=>{const ids=[...document.querySelectorAll('.sheet input:checked')].map(x=>x.value);if(!ids.length){toast('초대할 사람을 골라 주세요');return}
+    try{await roomsRef().doc(r.id).update({members:firebase.firestore.FieldValue.arrayUnion(...ids)});
+      await roomSys(r.id,`${myName()}님이 ${ids.map(i=>(mem(i)||{}).name).join(', ')}님을 초대했습니다`);close();refreshChat();toast('초대했어요')}catch(e){console.warn(e);toast('초대하지 못했어요')}}}
+function roomPeople(r){sheet(`<div class="stack"><h2>대화 상대</h2><div class="glist2">${(r.members||[]).map(id=>{const m=mem(id);if(!m)return '';
+    return `<button data-pp="${id}" class="ppl">${av(m)}<span>${esc(m.name)}${id===r.by?' <span class="small muted">방장</span>':''}${id===ME?' <span class="small muted">나</span>':''}</span></button>`}).join('')}</div></div>`,false,()=>roomMenu(r.id));
+  document.querySelectorAll('[data-pp]').forEach(b=>b.onclick=()=>profileSheet(b.dataset.pp))}
+function renameSheet(r){sheet(`<div class="stack"><h2>방 이름 바꾸기</h2><div class="field"><input id="rnm" maxlength="30" value="${esc(r.title)}"></div><button class="btn block" id="rnok">저장</button></div>`);
+  $('#rnok').onclick=async()=>{const t=$('#rnm').value.trim();if(!t||t===r.title){close();return}
+    try{await roomsRef().doc(r.id).update({title:t});await roomSys(r.id,`${myName()}님이 방 이름을 '${t}'(으)로 바꿨습니다`);close();renderMain()}catch(e){toast('바꾸지 못했어요')}}}
+function leaveAsk(rid){const r=ROOMS.find(x=>x.id===rid);if(!r)return;
+  sheet(`<div class="stack"><h2>방 나가기</h2><div>'${esc(r.title)}' 방에서 나갈까요?<br><span class="small muted">나가면 이 방의 대화를 더 볼 수 없어요. 남은 사람에게는 나갔다고 표시됩니다.</span></div>
+    <div class="actions"><button class="btn ghost" id="lvx">취소</button><button class="btn" id="lvok" style="background:var(--red)">나가기</button></div></div>`);
+  $('#lvx').onclick=close;
+  $('#lvok').onclick=async()=>{const rest=(r.members||[]).filter(x=>x!==ME);
+    try{if(rest.length)await roomSys(rid,`${myName()}님이 나갔습니다`);
+      await roomsRef().doc(rid).update({members:rest});close();setRoom(null);toast('방에서 나왔어요')}catch(e){console.warn(e);toast('나가지 못했어요')}}}

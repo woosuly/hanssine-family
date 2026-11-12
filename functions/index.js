@@ -121,6 +121,7 @@ exports.notifyRoomMsg = onDocumentCreated('families/hanssine/rooms/{rid}/msgs/{m
   if (!doc) return;
   let it;
   try { it = JSON.parse(doc.j); } catch (e) { return; }
+  if (it.sys) return; // 초대·나감 안내는 알리지 않음
   const roomSnap = await FAM.collection('rooms').doc(ev.params.rid).get();
   if (!roomSnap.exists) return;
   const room = roomSnap.data();
