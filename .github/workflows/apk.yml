@@ -27,7 +27,9 @@ jobs:
         env:
           KS: ${{ secrets.ANDROID_KEYSTORE_B64 }}
         run: |
-          if [ -n "$KS" ]; then echo "$KS" | base64 -d > android-app/android/app/release.keystore
+          if [ -n "$KS" ]; then echo "$KS" | tr -d ' \r\n' | base64 -d > android-app/android/app/release.keystore
+            echo "키 파일 확인(sha256 앞부분): $(sha256sum android-app/android/app/release.keystore | cut -c1-12), 크기 $(stat -c%s android-app/android/app/release.keystore)"
+            keytool -list -keystore android-app/android/app/release.keystore -storepass hanssine-family | head -5 || true
           else echo "::warning::서명 키(ANDROID_KEYSTORE_B64)가 없어 임시 키로 서명합니다. 이 APK는 업데이트 설치가 안 될 수 있어요."; fi
       - name: 빌드
         working-directory: android-app/android
