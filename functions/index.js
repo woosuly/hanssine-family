@@ -119,6 +119,16 @@ exports.notifySos = onDocumentCreated('families/hanssine/alerts/{id}', async (ev
   });
 });
 
+// 빙고 대결 신청: 상대 폰에 알림
+exports.notifyGame = onDocumentCreated('families/hanssine/games/{gid}', async (ev) => {
+  const g = ev.data && ev.data.data();
+  if (!g || g.status !== 'invite') return;
+  const {members, devices} = await loadFamily();
+  const who = members[g.a];
+  const targets = devices.filter(d => d.member === g.b);
+  await send(targets, {k: 'game', id: ev.params.gid, title: '빙고 대결 신청', body: `${who ? who.name : '가족'}님이 빙고 한 판 하자고 해요`, tag: 'game-' + ev.params.gid});
+});
+
 // 따로 만든 대화방: 방 멤버에게만 알림
 exports.notifyRoomMsg = onDocumentCreated('families/hanssine/rooms/{rid}/msgs/{mid}', async (ev) => {
   const doc = ev.data && ev.data.data();

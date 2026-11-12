@@ -47,13 +47,14 @@ function homeView(){
     </div>
     <div class="card" style="padding-block:8px"><div class="row between"><b>다가오는 일정</b><button class="link" data-go="cal">달력 ›</button></div>
       ${up.map(e=>`<div class="mini"><span>${esc(e.title)}</span><b class="num" style="color:var(--sun)">${dday(e._n)}</b></div>`).join('')||'<div class="small muted">없음</div>'}</div>
+    <button class="card gmcard" id="gmenu"><span><b>가족 놀이</b><br><span class="small muted">빙고 대결 · ${gameTop().concat(gameRotate()).filter(g=>g[0]!=='bingo').slice(0,3).map(g=>g[1]).join(' · ')}</span></span><b class="link">›</b></button>
     <div><div class="row between" style="margin-bottom:6px"><b>새 사진</b><button class="link" data-go="album">앨범 ›</button></div>
       <div class="thumbs">${ph.map(p=>`<button data-ph="${p.id}"><img src="${p.img}" alt="${esc(p.caption)}"></button>`).join('')}</div></div>
     ${isDaughter()?`<button class="card wxcard" data-go="dues"><span><b>${['monthly','tiered'].includes(S.dues.mode)?`${t.getMonth()+1}월 회비`:'회비'}</b> <span class="small muted num">${!S.dues.mode?'아직 정하지 않음':`${S.dues.mode==='event'?'':`${cnt}/3 가구 납부 · `}잔액 ${won(balance())}`}</span></span><span class="link">›</span></button>`:''}
   </div>`;
 }
 function bindHomeTab(){
-  bindPushRow(renderMain);$('#wx').onclick=weatherSheet;$('#ask').onclick=botSheet;if($('#pcard'))$('#pcard').onclick=parentSheet;
+  bindPushRow(renderMain);$('#wx').onclick=weatherSheet;$('#ask').onclick=botSheet;if($('#gmenu'))$('#gmenu').onclick=gameMenu;if($('#pcard'))$('#pcard').onclick=parentSheet;
   $('#nall').onclick=noticeList;if($('#nnew'))$('#nnew').onclick=noticeForm;
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{TAB=b.dataset.go;render();window.scrollTo(0,0)});
   document.querySelectorAll('[data-ph]').forEach(b=>b.onclick=()=>photoDetail(b.dataset.ph));

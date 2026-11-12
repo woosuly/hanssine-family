@@ -18,6 +18,10 @@ service cloud.firestore {
     match /families/hanssine/items/{id} {
       allow read, write: if member();
     }
+    // 놀이 대결(빙고): 가족 누구나
+    match /families/hanssine/games/{id} {
+      allow read, write: if member();
+    }
     // 초대 코드: 관리자만 보고 바꿈. 처음 한 번만 누구나 만들 수 있음(첫 설치)
     match /families/hanssine/private/invite {
       allow read, update: if admin();

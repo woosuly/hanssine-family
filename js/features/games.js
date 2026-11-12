@@ -8,10 +8,10 @@ function bindLv(g,restart){segBind('#lvseg',v=>{setPref('lv_'+g,v);restart()})}
 function resultView(title,lines,g,restart){
   const isEx=g==='ex';const up=g&&!isEx&&lvOf(g)!=='hard'?LV[LV.findIndex(x=>x[0]===lvOf(g))+1]:null;
   sheet(`<div class="result"><div class="big">${title}</div>${lines.map(l=>`<div class="fact">${l}</div>`).join('')}
-    <p class="muted" style="font-size:.85em">완료 소식이 딸들에게 전해집니다</p>
+    ${me().role==='parent'?'<p class="muted" style="font-size:.85em">완료 소식이 딸들에게 전해집니다</p>':''}
     <div class="actions">${restart?`<button class="btn ghost" id="again">${isEx?'운동 더 기록':'한 번 더'}</button>`:''}${up?`<button class="btn" id="lvup">${up[1]}으로 해 보기</button>`:''}</div>
     <div class="actions">${isEx?'':'<button class="btn ghost" id="more">다른 놀이</button>'}<button class="btn ghost" id="ok">처음 화면</button></div></div>`,true);
-  if($('#more'))$('#more').onclick=gameMenu;$('#ok').onclick=()=>{close();renderSenior()};
+  if($('#more'))$('#more').onclick=gameMenu;$('#ok').onclick=()=>{close();render()};
   if($('#again'))$('#again').onclick=restart;
   if($('#lvup'))$('#lvup').onclick=()=>{setPref('lv_'+g,up[0]);restart()};
 }
@@ -21,13 +21,24 @@ const GAMES=[
   ['pairs','가족 얼굴 짝 맞추기','같은 얼굴 두 장 찾기',()=>gamePairs()],
   ['numbers','숫자 차례로 누르기','숫자를 순서대로 빨리 누르기',()=>gameNumbers()],
   ['who','누가 올린 사진일까요?','가족 사진 보고 맞히기',()=>gameWho()],
+  ['mines','지뢰찾기','숫자를 보고 지뢰 피하기 · 깃발 꽂기',()=>gameMines()],
+  ['freecell','프리셀','카드를 무늬별로 A부터 K까지 올리기',()=>gameFreecell()],
+  ['g2048','2048','같은 숫자를 밀어서 합치기',()=>game2048()],
 ];
-const todayGame=()=>GAMES[Math.floor(today0()/864e5)%GAMES.length][0];
-function gameMenu(){
-  const tg=todayGame();const order=[...GAMES].sort((a,b)=>(b[0]===tg)-(a[0]===tg));
-  sheet(`<h2>두뇌 놀이</h2><p class="muted" style="font-size:.85em;margin:.2em 0 0">매일 추천 놀이가 바뀝니다</p>
-    <div class="glist">${order.map(g=>`<button data-g="${g[0]}" class="${g[0]===tg?'today':''}"><b>${g[0]===tg?'오늘의 추천 · ':''}${g[1]}</b><span>${g[2]} · ${lvName(g[0])}</span></button>`).join('')}</div>`,true);
-  document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>GAMES.find(g=>g[0]===b.dataset.g)[3]());
+// 많이 한 놀이 3개는 고정, 나머지는 분기마다 자동으로 바뀜 (가족 전체 횟수 기준)
+const gCount=id=>((S.gstat||{})[id]||0);
+function gameTop(){return GAMES.map((g,i)=>[g,i]).sort((x,y)=>gCount(y[0][0])-gCount(x[0][0])||x[1]-y[1]).slice(0,3).map(x=>x[0])}
+const quarter=()=>{const t=today0();return {key:t.getFullYear()*4+Math.floor(t.getMonth()/3),q:Math.floor(t.getMonth()/3)}};
+function gameRotate(){const top=gameTop().map(g=>g[0]);let seed=quarter().key*9301+49297;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+  return GAMES.filter(g=>!top.includes(g[0])).map(g=>[g,rnd()]).sort((a,b)=>a[1]-b[1]).slice(0,3).map(x=>x[0])}
+const todayGame=()=>gameTop()[0][0];
+function gameStart(id){S.gstat=S.gstat||{};S.gstat[id]=(S.gstat[id]||0)+1;save();GAMES.find(g=>g[0]===id)[3]()}
+function gameMenu(){const top=gameTop(),rot=gameRotate(),q=quarter().q;
+  const item=(g,rank)=>`<button data-g="${g[0]}" class="${rank===1?'today':''}"><b>${rank?rank+'위 · ':''}${g[1]}</b><span>${g[2]}${['bingo','cross','pairs','numbers','who','mines'].includes(g[0])?' · '+lvName(g[0]):''}${gCount(g[0])?` · 가족이 ${gCount(g[0])}번 함`:''}</span></button>`;
+  sheet(`<h2>놀이</h2>
+    <p class="muted" style="font-size:.85em;margin:.6em 0 0">가족이 많이 하는 놀이</p><div class="glist">${top.map((g,i)=>item(g,i+1)).join('')}</div>
+    <p class="muted" style="font-size:.85em;margin:.9em 0 0">이번 분기 놀이 (${q*3+1}~${q*3+3}월) · 분기마다 바뀝니다</p><div class="glist">${rot.map(g=>item(g,0)).join('')}</div>`,true);
+  document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>gameStart(b.dataset.g));
 }
 function gameNumbers(){
   const sz={easy:3,normal:4,hard:5}[lvOf('numbers')],N=sz*sz;
@@ -75,19 +86,6 @@ function gamePairs(){
       else setTimeout(()=>{[ba,bc].forEach(x=>{x.classList.remove('open');x.style.background='';x.style.fontSize=''});open=[]},900)}
   });
 }
-function bingoSetup(){
-  const opp=S.members.filter(x=>x.id!==ME&&(x.role==='parent'||x.role==='grand'));const [n,goal]={easy:[3,1],normal:[4,2],hard:[5,3]}[lvOf('bingo')];
-  sheet(`${lvBar('bingo')}<h2 style="margin-top:.5em">빙고 · 누구와 할까요?</h2><p class="muted" style="font-size:.85em;margin:.2em 0 0">${n}×${n} 판, 먼저 ${goal}줄을 만들면 이깁니다. 각자 자기 폰에서 내 판만 봅니다.</p>
-    <div class="glist">${opp.map(o=>`<button data-op="${o.id}"><b>${esc(o.name)}에게 대결 신청</b><span>${esc(o.name)} 폰에 알림이 갑니다</span></button>`).join('')}
-    <button data-op="cpu"><b>혼자 하기</b><span>컴퓨터와 대결</span></button></div>`,true,gameMenu);
-  bindLv('bingo',bingoSetup);
-  document.querySelectorAll('[data-op]').forEach(b=>b.onclick=()=>{const id=b.dataset.op;
-    if(id==='cpu')return bingo('컴퓨터',false);
-    const o=mem(id);
-    sheet(`<div class="result"><div class="big">${esc(o.name)} 기다리는 중</div><div class="fact">${esc(o.name)} 폰에 "빙고 한 판 하실래요?" 알림을 보냈어요</div>
-      <p class="muted" style="font-size:.8em">시제품에서는 상대가 바로 수락하고 자동으로 숫자를 부릅니다.</p></div>`,true,bingoSetup);
-    setTimeout(()=>bingo(o.name,true),1500)});
-}
 function bingo(oppName,remote){
   const [n,GOAL]={easy:[3,1],normal:[4,2],hard:[5,3]}[lvOf('bingo')],N=n*n;
   const board=()=>[...Array(N)].map((_,i)=>i+1).sort(()=>Math.random()-.5);
@@ -101,7 +99,7 @@ function bingo(oppName,remote){
         <span class="num" style="font-size:.85em">나 <b>${lines(mine)}</b>줄 · ${esc(oppName)} <b>${lines(theirs)}</b>줄 · 목표 ${GOAL}줄</span></div>
       <p class="muted" style="font-size:.85em;margin:0 0 .4em">${last||(myTurn?'부를 숫자를 누르세요':'')}${!myTurn&&!over?` ${esc(oppName)}${remote?' 폰에서':'가'} 고르는 중…`:''}</p>
       <div class="bingo" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${mine.map(x=>`<button data-b="${x}" class="${called.has(x)?'mk':''}" style="font-size:${n>4?1.15:1.5}em" ${called.has(x)||over||!myTurn?'disabled':''}>${x}</button>`).join('')}</div>
-      ${remote?'<p class="muted" style="font-size:.75em;margin:.5em 0 0">상대 판은 보이지 않습니다. 실제 앱에서는 두 폰이 실시간으로 이어집니다.</p>':''}`,true,()=>{over=true;bingoSetup()});
+`,true,()=>{over=true;bingoSetup()});
     document.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>call(+b.dataset.b,true));
   };
   const call=(x,byMe)=>{if(over||called.has(x))return;called.add(x);last=byMe?`내가 ${x}을(를) 불렀어요.`:`${oppName}이(가) ${x}을(를) 불렀어요.`;

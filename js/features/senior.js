@@ -155,7 +155,7 @@ function bindSrTalk(){
 function srTodo(){
   const lg=(S.log[ymd(today0())]||{})[ME]||{};
   return `<div class="todo-c"><div class="sr-h2">오늘의 할 일</div>
-    <button class="tbig ${lg.game?'done':''}" id="tgame"><b>두뇌 놀이</b><span>${lg.game?'오늘 완료 · 한 번 더 하기':'오늘의 추천: '+GAMES.find(g=>g[0]===todayGame())[1]}</span></button>
+    <button class="tbig ${lg.game?'done':''}" id="tgame"><b>두뇌 놀이</b><span>${lg.game?'오늘 완료 · 한 번 더 하기':'많이 하는 놀이: '+GAMES.find(g=>g[0]===todayGame())[1]}</span></button>
     <button class="tbig ${lg.ex?'done':''}" id="tex"><b>운동 기록</b><span>${(()=>{const st=exStat(ME);return st.today?`오늘 ${hm(st.today)} · ${diffTxt(st.today,st.yest)}`:`어제 ${hm(st.yest)} · 이번 달 ${hm(st.month)}`})()}</span></button>
     <div class="card" style="font-size:.9em;text-align:center">${partLine()}</div></div>`;
 }

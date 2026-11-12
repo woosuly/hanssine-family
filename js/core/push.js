@@ -45,7 +45,7 @@ function openFromPush(k,id){if(!ME||!mem(ME))return;close();
   const room=k==='room'&&id;
   if(me().role==='parent'){SR_TAB=(k==='chat'||room)?'talk':'home';if(k==='chat')SCHAT='fam';if(room){SCHAT='room:'+id;openRoom(id)}}
   else{TAB={chat:'talk',room:'talk',photos:'album',events:'cal',notices:'home',sos:'home'}[k]||TAB;if(k==='chat'){closeRoom();CROOM=null}if(room)openRoom(id)}
-  render()}
+  render();if(k==='game'&&id)gameFromPush(id)}
 const PUSH_OPEN=(location.search.match(/[?&]open=([a-z]+)/)||[])[1]||'',PUSH_RID=(location.search.match(/[?&]rid=([\w-]+)/)||[])[1]||'';
 function pushAfterBoot(){nativeAfterBoot();
   if(PUSH_OPEN){openFromPush(PUSH_OPEN,PUSH_RID);try{history.replaceState(null,'',location.pathname)}catch(e){}}
