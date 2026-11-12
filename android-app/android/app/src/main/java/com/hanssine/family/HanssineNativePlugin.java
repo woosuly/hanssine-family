@@ -53,6 +53,16 @@ public class HanssineNativePlugin extends Plugin {
 
     /** 앱이 처음 열릴 때 알림으로 열렸는지 확인 (한 번만) */
     @PluginMethod
+    public void setBar(PluginCall call) {
+        try {
+            int c = android.graphics.Color.parseColor(call.getString("color", "#2E6A4E"));
+            int b = android.graphics.Color.parseColor(call.getString("bg", "#F3F4EF"));
+            MainActivity.setBarColor(c, b);
+        } catch (Exception e) { /* 무시 */ }
+        call.resolve();
+    }
+
+    @PluginMethod
     public void takeLaunchPush(PluginCall call) {
         JSObject r = new JSObject();
         if (pendK != null) {

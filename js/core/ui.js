@@ -20,8 +20,12 @@ function goBack(){const f=BACK;if(f)f();else{close();render()}}
 function pref(k,d){return ((S.prefs||{})[ME]||{})[k]??d}
 function setPref(k,v){S.prefs=S.prefs||{};S.prefs[ME]={...(S.prefs[ME]||{}),[k]:v};save()}
 const SKINS=[['forest','숲','#2E6A4E'],['sea','바다','#2D5F8B'],['sunset','노을','#B4532A'],['lavender','라벤더','#6A55A3'],['ink','먹','#3B4148']];
+// 앱(APK) 위쪽 상태바 띠: 스킨 색, 아래쪽은 화면 바탕색
+function nativeBar(){try{const P=typeof NPLUG==='function'&&NPLUG('HanssineNative');if(!P||!P.setBar)return;
+  const sk=(ME&&mem(ME)&&!isSenior())?pref('skin','forest'):'forest',col=(SKINS.find(x=>x[0]===sk)||SKINS[0])[2];
+  setTimeout(()=>{const bg=getComputedStyle(document.body).backgroundColor,m=bg.match(/\d+/g)||[243,244,239],hx='#'+m.slice(0,3).map(n=>(+n).toString(16).padStart(2,'0')).join('');P.setBar({color:col,bg:hx}).catch(()=>{})},50)}catch(e){}}
 const THEMES=[['system','휴대폰 설정'],['light','주간'],['dark','야간']];
-function applyTheme(){const r=document.documentElement;
+function applyTheme(){const r=document.documentElement;nativeBar();
   if(!ME||!mem(ME)||isSenior()){delete r.dataset.theme;delete r.dataset.skin;return}
   const th=pref('theme','system');if(th==='system')delete r.dataset.theme;else r.dataset.theme=th;
   const sk=pref('skin','forest');if(sk==='forest')delete r.dataset.skin;else r.dataset.skin=sk;}
