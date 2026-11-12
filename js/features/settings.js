@@ -26,7 +26,6 @@ function setView(){
       ${[['notice','공지'],['hospital','병원 전날 (동행 담당)'],['bday','생신·기일 7일 전']].map(([k,n])=>`<label class="hh"><span>${n}</span><input type="checkbox" data-ni="${k}" ${N.items[k]?'checked':''}></label>`).join('')}
       <div class="small muted">문자는 건당 요금이 발생합니다.</div></div></details>
     <details><summary>역할·지역</summary><div class="in">
-      <div class="field"><label for="tre">회비 총무</label><select id="tre"><option value="" ${S.dues.treasurer?'':'selected'}>미정</option>${['h1','h2','h3'].map(h=>`<option value="${h}" ${S.dues.treasurer===h?'selected':''}>${HOUSES[h]}</option>`).join('')}</select></div>
       <div class="field"><label for="wloc">날씨 지역 (부모님 동네)</label><input id="wloc" value="${esc(S.weather.loc)}"></div>
       <div class="field"><label for="fam">가족 이름 (AI·공지에 쓰는 이름)</label><input id="fam" value="${esc(S.family)}" maxlength="10"></div>
       <div class="field"><label for="brand">앱 상단 이름</label><input id="brand" value="${esc(S.brand||"Han's Family")}" maxlength="20"></div></div></details>

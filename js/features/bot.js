@@ -52,7 +52,7 @@ function actText(a){
   if(a.type==='settle')return ['정산',`${a.title} · 총 ${won(a.total)}`,'세 가구 나누기'];
   return ['기타',JSON.stringify(a),'']}
 function applyAct(a,img){const r=me().role,isT=isTreas();
-  if((a.type==='tx'||a.type==='settle')&&r!=='child')return '회비는 자녀만 반영할 수 있어요';
+  if((a.type==='tx'||a.type==='settle')&&!isDaughter())return '회비는 딸들만 반영할 수 있어요';
   if(a.type==='event'){const kind=TYPES[a.kind]&&EVKINDS.includes(a.kind)?a.kind:'custom';const e={id:uid(),date:a.date,title:a.title||TYPES[kind][0],type:kind,scope:kind==='hospital'?'adults':'all',time:a.time||'',place:a.place||'',escort:'',remind:['d1'],repeat:a.repeat||(kind==='jesa'?'lunar':'none')};
     if(a.end&&a.end>a.date)e.end=a.end;if(e.repeat==='lunar'){const l=S2L(parse(e.date));if(l){e.lm=l.m;e.ld=l.d}else e.repeat='none'}if(kind==='family'||kind==='trip')e.rsvp={};S.events.push(e);return '일정에 등록했어요'}
   if(a.type==='tx'){if(!isT){S.chat=S.chat||[];S.chat.push({id:uid(),by:ME,ts:Date.now(),text:`[회비 기록 요청] ${a.date} ${a.desc} ${won(a.amount)} — 총무님 확인 부탁드려요`});return `총무(${S.dues.treasurer?HOUSES[S.dues.treasurer]:'미정'})에게 기록 요청을 보냈어요`}
@@ -71,7 +71,7 @@ function localSearch(q){
   S.notices.filter(canSee).forEach(n=>{if(hit(n.text))out.push(`공지 · ${n.date} ${n.text}`)});
   S.photos.filter(canSee).forEach(p=>{if(hit(p.caption+' '+p.tag+' '+mem(p.by).name))out.push(`사진 · ${p.date} ${p.caption}`)});
   (S.chat||[]).forEach(m=>{if(m.text&&hit(m.text))out.push(`대화 · ${whoOf(m.by).name}: ${m.text.slice(0,40)}`)});
-  if(me().role==='child'){S.dues.tx.forEach(x=>{if(hit(x.desc+' 회비'))out.push(`회비 · ${x.date} ${x.desc} ${won(x.amt)}`)});S.settles.forEach(x=>{if(hit(x.title+' 정산'))out.push(`정산 · ${x.date} ${x.title} ${won(x.total)}`)})}
+  if(isDaughter()){S.dues.tx.forEach(x=>{if(hit(x.desc+' 회비'))out.push(`회비 · ${x.date} ${x.desc} ${won(x.amt)}`)});S.settles.forEach(x=>{if(hit(x.title+' 정산'))out.push(`정산 · ${x.date} ${x.title} ${won(x.total)}`)})}
   if(S.poll&&hit(S.poll.q+' 투표'))out.push(`투표 · ${S.poll.q} (${S.poll.opts.map(o=>o.t+' '+o.v.length).join(', ')})`);
   return out.slice(0,8);
 }
@@ -81,7 +81,7 @@ function botLog(){return BOT.map((m,mi)=>m.role==='user'?`<div class="cm mine"><
     ${(m.actions||[]).map((a,ai)=>{const [k,main,sub]=actText(a);return `<div class="actc ${a._st||''}"><span class="tag">${k}</span><b>${esc(main)}</b>${sub?`<span class="small muted">${esc(sub)}</span>`:''}
       ${a._st==='done'?`<span class="small" style="color:var(--pine)">${esc(a._msg||'반영 완료')}</span>`:a._st==='skip'?'<span class="small muted">반영 안 함</span>':
       `<span class="row" style="gap:6px"><button class="btn" data-ap="${mi}:${ai}">반영</button>${a.type==='event'||a.type==='tx'?`<button class="btn ghost" data-ae2="${mi}:${ai}">고쳐서 반영</button>`:''}<button class="chip" data-as="${mi}:${ai}">빼기</button></span>`}</div>`}).join('')}</div></div>`).join('')
-  ||(me().role==='child'?`<div class="msg ai" style="max-width:100%">말·글·사진·파일로 알려 주시면 일정·회비·공지·앨범·투표에 반영하고, 앱에 있는 내용도 찾아 드립니다.<br><br>예) "다음 주 토요일 6시 가족 외식 잡아줘"<br>예) "김장 언제였지?"<br>예) 영수증 사진 + "어머니 생신 케이크"</div>`
+  ||(isDaughter()?`<div class="msg ai" style="max-width:100%">말·글·사진·파일로 알려 주시면 일정·회비·공지·앨범·투표에 반영하고, 앱에 있는 내용도 찾아 드립니다.<br><br>예) "다음 주 토요일 6시 가족 외식 잡아줘"<br>예) "김장 언제였지?"<br>예) 영수증 사진 + "어머니 생신 케이크"</div>`
     :`<div class="msg ai" style="max-width:100%">말·글·사진으로 알려 주시면 일정·공지·앨범·투표에 반영하고, 앱에 있는 내용도 찾아 드립니다.<br><br>예) "다음 주 토요일 6시 가족 외식 잡아줘"<br>예) "김장 언제였지?"<br>예) 사진 + "할머니 생신 사진 앨범에 올려줘"</div>`)}
 function botSheet(auto){botLoad();botSave();
   const sugg=['김장 언제야?','12월 5일 김장 일정 잡아줘',...(me().role==='child'?['케이크 3만5천원 회비에서 썼어']:[]),'토요일, 일요일 중 외식 투표 만들어줘','다음 주 화요일 오전 10시 아버지 병원'];

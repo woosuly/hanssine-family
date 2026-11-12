@@ -6,13 +6,13 @@ function noticeList(){
     ${isSenior()?`<button class="btn ghost" style="margin-top:6px" data-tts="${esc(n.text)}">읽어 주기</button>`:''}</div>`).join('')||'<div class="muted">공지가 없습니다</div>'}</div>`,isSenior());
   document.querySelectorAll('[data-tts]').forEach(b=>b.onclick=()=>speak(b.dataset.tts));if($('#cl'))$('#cl').onclick=close;
 }
-function tabs(){return [['home','홈'],['cal','일정'],['album','앨범'],['talk','대화'],...(me().role==='child'?[['dues','회비']]:[]),['trans','번역']]}
+function tabs(){return [['home','홈'],['cal','일정'],['album','앨범'],['talk','대화'],...(isDaughter()?[['dues','회비']]:[]),['trans','번역']]}
 const SUBPAGES={set:'설정'};
 let PREV_TAB='home';
 function renderMain(){
   document.body.classList.remove('senior');applyScale();stopFx();
   const m=me();
-  if(TAB==='dues'&&m.role!=='child')TAB='home';
+  if(TAB==='dues'&&!isDaughter())TAB='home';
   const sub=SUBPAGES[TAB];
   const body=({home:homeView,talk:talkView,album:albumView,cal:calView,dues:duesView,set:setView,trans:()=>'<div id="transroot" class="transroot"></div>'})[TAB]();
   $('#app').innerHTML=`<div class="wrap">${devBar()}
@@ -48,7 +48,7 @@ function homeView(){
       ${up.map(e=>`<div class="mini"><span>${esc(e.title)}</span><b class="num" style="color:var(--sun)">${dday(e._n)}</b></div>`).join('')||'<div class="small muted">없음</div>'}</div>
     <div><div class="row between" style="margin-bottom:6px"><b>새 사진</b><button class="link" data-go="album">앨범 ›</button></div>
       <div class="thumbs">${ph.map(p=>`<button data-ph="${p.id}"><img src="${p.img}" alt="${esc(p.caption)}"></button>`).join('')}</div></div>
-    ${r==='child'?`<button class="card wxcard" data-go="dues"><span><b>${['monthly','tiered'].includes(S.dues.mode)?`${t.getMonth()+1}월 회비`:'회비'}</b> <span class="small muted num">${!S.dues.mode?'아직 정하지 않음':`${S.dues.mode==='event'?'':`${cnt}/3 가구 납부 · `}잔액 ${won(balance())}`}</span></span><span class="link">›</span></button>`:''}
+    ${isDaughter()?`<button class="card wxcard" data-go="dues"><span><b>${['monthly','tiered'].includes(S.dues.mode)?`${t.getMonth()+1}월 회비`:'회비'}</b> <span class="small muted num">${!S.dues.mode?'아직 정하지 않음':`${S.dues.mode==='event'?'':`${cnt}/3 가구 납부 · `}잔액 ${won(balance())}`}</span></span><span class="link">›</span></button>`:''}
   </div>`;
 }
 function bindHomeTab(){

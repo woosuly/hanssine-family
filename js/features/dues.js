@@ -2,8 +2,10 @@
 /* features/dues */
 const MODES=[['monthly','월 정액'],['tiered','가구별 금액'],['event','행사 때만']];
 function accs(){return S.dues.accounts||[]}
-// 총무가 정해지기 전에는 관리자가 대신 관리
-const isTreas=()=>me().house===S.dues.treasurer||(!S.dues.treasurer&&isAdmin());
+// 회비는 딸들만 봄. 회비 방식·금액·총무는 큰딸이 정하고, 납부·내역·계좌는 총무(가구의 딸)와 큰딸이 관리
+const isDaughter=()=>!!ME&&/^d\d$/.test(ME)&&(me()||{}).role==='child';
+const isDuesBoss=()=>ME==='d1';
+const isTreas=()=>isDaughter()&&(isDuesBoss()||me().house===S.dues.treasurer);
 function accName(id){const a=accs().find(x=>x.id===id);return a?a.name:'-'}
 function balance(acc){return S.dues.tx.filter(x=>!acc||x.acc===acc).reduce((a,x)=>a+x.amt,0)}
 function houseDue(h){const d=S.dues;return d.mode==='tiered'?(d.perHouse||{})[h]||0:d.mode==='event'?0:d.monthly}
@@ -17,13 +19,13 @@ function duesView(){
     <div class="big-num num">${won(balance())}</div>
     <div class="accs">${accs().map(a=>`<div class="acc"><span class="small muted">${esc(a.name)}</span><b class="num">${won(balance(a.id))}</b>
       ${a.kind==='bank'?`<span class="small muted num">${esc(a.bank||'')} ${esc(maskNum(a.num))}</span><button class="link" data-copy="${esc(a.num)}">계좌번호 복사</button>`:`<span class="small muted">${a.kind==='cash'?'현금':'기타'}</span>`}</div>`).join('')}</div>
-    ${isT?'<button class="link" id="accm" style="margin-top:6px">걷는 방식 · 계좌 관리 ›</button>':''}</div>`;
+    ${isT?`<button class="link" id="accm" style="margin-top:6px">${isDuesBoss()?'걷는 방식 · 총무 · 계좌 관리 ›':'계좌 관리 ›'}</button>`:''}</div>`;
   if(DSUB==='settle')return sub+head+`<div class="sec" style="margin-top:12px"><div class="sec-h"><h2>모임 비용 정산</h2><button class="chip" id="addst">정산 추가</button></div>
     <div class="card">${S.settles.length?S.settles.slice().reverse().map(s=>{const rest=s.total-s.fromDues,per=Math.ceil(rest/s.houses.length/10)*10;
       return `<div class="hh" style="align-items:flex-start"><span><b>${esc(s.title)}</b><br><span class="small muted">${s.date} · 총 ${won(s.total)}${s.fromDues?` · 회비 ${won(s.fromDues)}`:''}</span></span>
       <span style="text-align:right"><b class="num">${rest>0?'가구당 '+won(per):'회비로 처리'}</b><br><span class="small muted">${s.houses.map(h=>HOUSES[h]).join('·')}</span></span></div>`}).join(''):'<span class="muted">정산 내역 없음</span>'}</div></div>`;
   const txs=S.dues.tx.filter(x=>!ACCF||x.acc===ACCF).slice().sort((a,b)=>b.date.localeCompare(a.date));
-  return sub+head+(!mode?`<div class="card" style="margin-top:12px"><div class="muted">아직 회비 방식과 금액을 정하지 않았어요.</div>${isT?'<button class="btn block" id="dset" style="margin-top:10px">회비 정하기</button>':'<div class="small muted" style="margin-top:4px">총무가 정하면 여기에 보여요.</div>'}</div>`:mode==='event'?`<div class="card small muted" style="margin-top:12px">행사 때만 걷는 방식입니다. '모임 정산'에서 가구별로 나눕니다.</div>`:
+  return sub+head+(!mode?`<div class="card" style="margin-top:12px"><div class="muted">아직 회비 방식과 금액을 정하지 않았어요.</div>${isDuesBoss()?'<button class="btn block" id="dset" style="margin-top:10px">회비 정하기</button>':'<div class="small muted" style="margin-top:4px">큰딸이 정하면 여기에 보여요.</div>'}</div>`:mode==='event'?`<div class="card small muted" style="margin-top:12px">행사 때만 걷는 방식입니다. '모임 정산'에서 가구별로 나눕니다.</div>`:
     `<div class="sec" style="margin-top:12px"><div class="sec-h"><h2>${t.getMonth()+1}월 납부</h2><span class="small muted num">${cnt} / 3 가구</span></div>
     <div class="card" style="padding-block:4px">${['h1','h2','h3'].map(h=>`<div class="hh"><span>${HOUSES[h]} <span class="small muted num">${won(houseDue(h))}</span></span><button class="paid ${paid[h]?'on':''}" data-pay="${h}" ${isT?'':'disabled'}>${paid[h]?'납부 완료':'미납'}</button></div>`).join('')}</div></div>`)+
     `<div class="sec" style="margin-top:12px"><div class="sec-h"><h2>내역</h2>${isT?'<button class="chip" id="addtx">내역 추가</button>':''}</div>
@@ -91,19 +93,21 @@ function accEdit(a,back){const d=S.dues;d.accounts=d.accounts||[];const isNew=!a
     if(isNew){d.accounts.push(a);ACCF=a.id}save();toast('저장했어요');if(back)back();else{close();renderMain()}};
 }
 function accountsSheet(){
-  const d=S.dues;
-  sheet(`<div class="stack"><h2>계좌·걷는 방식</h2>
+  const d=S.dues,boss=isDuesBoss();
+  sheet(`<div class="stack"><h2>${boss?'회비 정하기 · 계좌':'계좌 관리'}</h2>
+    <div class="stack" style="gap:12px" ${boss?'':'hidden'}>
+    <div class="field"><label for="tre">총무</label><select id="tre"><option value="">미정 (큰딸이 관리)</option>${['h1','h2','h3'].map(h=>`<option value="${h}" ${d.treasurer===h?'selected':''}>${HOUSES[h]}</option>`).join('')}</select></div>
     <div class="field"><label>걷는 방식</label><div class="seg" id="mode">${MODES.map(([k,n])=>`<button data-v="${k}" class="${d.mode===k?'on':''}">${n}</button>`).join('')}</div></div>
     <div class="field" id="mw"><label for="mm">가구당 월 회비(원)</label><input id="mm" inputmode="numeric" value="${d.monthly||''}" placeholder="예: 50000"></div>
-    <div id="tw" class="stack" style="gap:8px">${['h1','h2','h3'].map(h=>`<div class="field"><label for="ph-${h}">${HOUSES[h]} 월 회비(원)</label><input id="ph-${h}" inputmode="numeric" value="${(d.perHouse||{})[h]||''}" placeholder="예: 50000"></div>`).join('')}</div>
+    <div id="tw" class="stack" style="gap:8px">${['h1','h2','h3'].map(h=>`<div class="field"><label for="ph-${h}">${HOUSES[h]} 월 회비(원)</label><input id="ph-${h}" inputmode="numeric" value="${(d.perHouse||{})[h]||''}" placeholder="예: 50000"></div>`).join('')}</div></div>
     <h2 style="margin-top:6px">계좌</h2>
     ${accs().map(a=>`<div class="card"><div class="row between"><b>${esc(a.name)}</b><span class="row" style="gap:4px"><button class="chip" data-ae="${a.id}">수정</button>${S.dues.tx.some(x=>x.acc===a.id)?'':`<button class="chip" data-ad="${a.id}">삭제</button>`}</span></div>
       <div class="small muted">${a.kind==='bank'?`${esc(a.bank||'')} ${esc(a.num||'')} · 예금주 ${esc(a.holder||'-')}`:a.kind==='cash'?'현금 보관':'기타 (상품권·포인트 등)'} · 잔액 ${won(balance(a.id))}</div></div>`).join('')}
     <button class="btn ghost block" id="aadd">계좌·보관처 추가</button>
     <button class="btn block" id="sv">저장</button></div>`,false,()=>{close();renderMain()});
   let mode=d.mode||'';const sync=()=>{$('#mw').hidden=mode!=='monthly';$('#tw').hidden=mode!=='tiered'};segBind('#mode',v=>{mode=v;sync()});sync();
-  const saveMode=()=>{d.mode=mode;d.monthly=parseInt($('#mm').value.replace(/\D/g,''),10)||0;d.perHouse={};['h1','h2','h3'].forEach(h=>d.perHouse[h]=parseInt($('#ph-'+h).value.replace(/\D/g,''),10)||0);save()};
-  $('#sv').onclick=()=>{if(mode==='monthly'&&!(parseInt($('#mm').value.replace(/\D/g,''),10)>0)){toast('월 회비 금액을 입력해 주세요');$('#mm').focus();return}saveMode();toast('저장했어요');close();renderMain()};
+  const saveMode=()=>{if(!boss)return;d.treasurer=$('#tre').value;d.mode=mode;d.monthly=parseInt($('#mm').value.replace(/\D/g,''),10)||0;d.perHouse={};['h1','h2','h3'].forEach(h=>d.perHouse[h]=parseInt($('#ph-'+h).value.replace(/\D/g,''),10)||0);save()};
+  $('#sv').onclick=()=>{if(boss&&mode==='monthly'&&!(parseInt($('#mm').value.replace(/\D/g,''),10)>0)){toast('월 회비 금액을 입력해 주세요');$('#mm').focus();return}saveMode();toast('저장했어요');close();renderMain()};
   document.querySelectorAll('[data-ad]').forEach(b=>b.onclick=()=>{saveMode();d.accounts=accs().filter(a=>a.id!==b.dataset.ad);save();accountsSheet()});
   const edit=a=>{saveMode();const isNew=!a;a=a||{id:'a'+uid(),kind:'bank'};
     sheet(`<div class="stack"><h2>${isNew?'계좌 추가':'계좌 수정'}</h2>
