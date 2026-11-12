@@ -656,3 +656,22 @@ body.dragging{user-select:none;-webkit-user-select:none}
 .bub.deleted{color:var(--muted);font-style:italic;background:transparent;border:1px dashed var(--line)}
 .edtag{font-size:10px;color:var(--muted);margin-right:4px}
 body.kbopen .tabbar{display:none}
+
+/* 말풍선 메뉴 */
+.mpop-dim{position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.08)}
+.mpop{position:fixed;max-width:min(340px,calc(100vw - 16px));background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;gap:6px}
+.mpop-b{display:flex;flex-wrap:wrap;gap:2px}
+.mpop-b button{border:0;background:none;border-radius:10px;padding:6px 8px;min-width:48px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--ink,inherit)}
+.mpop-b button:active{background:var(--pine-soft)}
+.mpop-b button.red{color:var(--red)}
+.mpop-b svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
+.mpop-tr{background:var(--pine-soft);border-radius:10px;padding:8px 10px}
+.mpop-tr .tr-t{font-size:15px;font-weight:600}
+.mpop-tr .tr-p{font-size:13px}
+.mpop-lang{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);padding:0 4px}
+.mpop-lang select{font-size:12px;padding:3px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:inherit}
+.cm.picked .bub{outline:2px solid var(--pine);outline-offset:1px}
+/* 아래 칸: 선택한 탭에 음영 */
+.tabbar .in{padding:4px 6px;gap:4px}
+.tabbar button{border-radius:12px;margin:2px 0}
+.tabbar button.on{background:var(--pine-soft)}

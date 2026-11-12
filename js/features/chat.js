@@ -113,22 +113,37 @@ function editMsg(id){const m=findMsg(id);if(!m)return;
   $('#medx').onclick=close;$('#medok').onclick=()=>{const t=$('#medt').value.trim();if(!t){toast('내용을 입력해 주세요');return}close();if(t!==m.text)patchMsg(m,{text:t,edited:Date.now(),orig:undefined})}}
 function delMsg(id){const m=findMsg(id);if(!m)return;if(m.file&&m.file.data)delMedia(m.file.data);if(m.img)delMedia(m.img);
   close();patchMsg(m,{del:true,text:'',file:null,img:null,sticker:null,act:null,orig:undefined});toast('메시지를 삭제했어요')}
-function mineBtns(m){return m.by===ME&&!m.del?`${m.text?'<button class="btn ghost" id="medit">수정</button>':''}<button class="btn ghost" id="mdel" style="color:var(--red)">삭제</button>`:''}
+function mineBtns(m){return m.by===ME&&!m.del?`${m.text?`<button id="medit">${MI.edit}<span>수정</span></button>`:''}<button id="mdel" class="red">${MI.del}<span>삭제</span></button>`:''}
 function bindMine(id){if($('#medit'))$('#medit').onclick=()=>editMsg(id);
-  if($('#mdel'))$('#mdel').onclick=()=>{const b=$('#mdel');if(!b.dataset.sure){b.dataset.sure=1;b.textContent='삭제 확인';return}delMsg(id)}}
+  if($('#mdel'))$('#mdel').onclick=()=>{const b=$('#mdel');if(!b.dataset.sure){b.dataset.sure=1;b.querySelector('span').textContent='한 번 더';return}delMsg(id)}}
+const MI={reply:'<svg viewBox="0 0 24 24"><path d="M10 8L5 12l5 4"/><path d="M5 12h9a5 5 0 0 1 5 5v1"/></svg>',
+  edit:'<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
+  del:'<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>'};
+// 말풍선을 누르면 바로 옆에 작은 메뉴
 function msgMenu(id){const m=findMsg(id);if(!m||m.wait||m.del)return;
-  if(!m.text){sheet(`<div class="stack"><div class="card small muted">${esc(whoOf(m.by).name)} · ${esc(msgSnip(m))}</div><div class="actions"><button class="btn" id="mrp">답장</button>${mineBtns(m)}</div></div>`);$('#mrp').onclick=()=>setReply(id);bindMine(id);return}
-  const ko=/[가-힣]/.test(m.text),to=ko?pref('chatTr','en'):'ko',r=TRM[id+to];
-  sheet(`<div class="stack"><div class="card" style="white-space:pre-wrap">${esc(m.text)}</div>
-    ${ko?`<div class="row" style="gap:6px"><span class="small muted">번역할 언어</span><select id="mtl" class="chip">${LANGS.map(([c,n])=>`<option value="${c}" ${c===to?'selected':''}>${n}</option>`).join('')}</select></div>`:''}
-    ${r?`<div class="tr-out"><div class="tr-t" style="font-size:17px">${esc(r.t)}</div>${r.p?`<div class="tr-p">발음 · ${esc(r.p)}</div>`:''}</div>`:''}
-    <div class="actions"><button class="btn" id="mrp">답장</button><button class="btn ghost" id="mtr">${IC.trans}${r?'다시 번역':'번역'}</button><button class="btn ghost" id="mcp">${IC.copy}복사</button><button class="btn ghost" id="mtt">${IC.spk}읽기</button>${mineBtns(m)}</div></div>`);bindMine(id);
-  if($('#mtl'))$('#mtl').onchange=e=>{setPref('chatTr',e.target.value);msgMenu(id)};
-  $('#mtr').onclick=async()=>{$('#mtr').textContent='번역 중…';try{TRM[id+to]=await translate(m.text,ko?'ko':'auto',to);msgMenu(id)}catch(e){$('#mtr').textContent='번역';toast(aiErr(e).split('.')[0])}};
+  const ko=m.text&&/[가-힣]/.test(m.text),to=ko?pref('chatTr','en'):'ko',r=m.text?TRM[id+to]:null;
+  const btns=`<button id="mrp">${MI.reply}<span>답장</span></button>${m.text?`<button id="mtr">${IC.trans}<span>번역</span></button><button id="mcp">${IC.copy}<span>복사</span></button><button id="mtt">${IC.spk}<span>읽기</span></button>`:''}${mineBtns(m)}`;
+  const tr=r?`<div class="mpop-tr"><div class="tr-t">${esc(r.t)}</div>${r.p?`<div class="tr-p">발음 · ${esc(r.p)}</div>`:''}</div>`:'';
+  const lang=ko&&m.text?`<label class="mpop-lang">번역 언어 <select id="mtl">${LANGS.map(([c,n])=>`<option value="${c}" ${c===to?'selected':''}>${n}</option>`).join('')}</select></label>`:'';
+  $('#layer').innerHTML=`<div class="mpop-dim" id="mdim"><div class="mpop" id="mpop" role="menu"><div class="mpop-b">${btns}</div>${tr}${lang}</div></div>`;BACK=null;
+  $('#mdim').onclick=e=>{if(e.target.id==='mdim')close()};
+  placePop(id);bindMine(id);
   $('#mrp').onclick=()=>setReply(id);
-  $('#mcp').onclick=()=>{try{navigator.clipboard.writeText(m.text).then(()=>toast('복사했어요'),()=>toast('복사할 수 없습니다'))}catch(e){}};
+  if(!m.text)return;
+  if($('#mtl'))$('#mtl').onchange=e=>{setPref('chatTr',e.target.value);msgMenu(id)};
+  $('#mtr').onclick=async()=>{$('#mtr span').textContent='번역 중';try{TRM[id+to]=await translate(m.text,ko?'ko':'auto',to);msgMenu(id)}catch(e){$('#mtr span').textContent='번역';toast(aiErr(e).split('.')[0])}};
+  $('#mcp').onclick=()=>{try{navigator.clipboard.writeText(m.text).then(()=>{toast('복사했어요');close()},()=>toast('복사할 수 없습니다'))}catch(e){}};
   $('#mtt').onclick=()=>speakIn(r?r.t:m.text,r?(to==='ko'?'ko-KR':lg(to)[2]):'ko-KR');
 }
+// 메뉴 위치: 말풍선 아래(공간이 없으면 위), 내 메시지는 오른쪽 맞춤
+function placePop(id){const p=$('#mpop'),el=document.querySelector('#cm-'+CSS.escape(id));if(!p)return;
+  const k=isSenior()?1:(scale()||1),W=innerWidth/k,H=(window.visualViewport?visualViewport.height:innerHeight)/k;
+  const b=el?(el.querySelector('.bub,img,.cfile,.stk')||el).getBoundingClientRect():{top:H/2*k,bottom:H/2*k,left:12,right:W*k-12};
+  const top=b.top/k,bot=b.bottom/k,mine=el&&el.classList.contains('mine'),pw=p.offsetWidth,ph=p.offsetHeight;
+  let y=bot+6;if(y+ph>H-8)y=top-ph-6;if(y<8)y=Math.max(8,H-ph-8);
+  let x=mine?b.right/k-pw:b.left/k;x=Math.max(8,Math.min(x,W-pw-8));
+  p.style.left=x+'px';p.style.top=y+'px';if(el)el.classList.add('picked');
+  const un=()=>{if(el)el.classList.remove('picked')};new MutationObserver((_,o)=>{if(!$('#mpop')){un();o.disconnect()}}).observe($('#layer'),{childList:true})}
 function trSendSheet(t0){let res=null;const to=pref('chatTr','en');
   sheet(`<div class="stack"><h2>번역해서 보내기</h2>
     <div class="field"><label for="tsq">보낼 말 (한국어)</label><textarea id="tsq" rows="3">${esc(t0||'')}</textarea></div>
