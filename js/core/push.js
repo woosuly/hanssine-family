@@ -29,6 +29,7 @@ async function pushTest(){if(NPLUG('HanssineNative')){NPLUG('HanssineNative').te
 function pushRowHtml(){const s=pushState();
   if(s==='unsupported')return `<div class="small muted">${isIOS()&&!isStandalone()?'아이폰은 사파리에서 공유 → 홈 화면에 추가한 뒤 그 앱에서 알림을 켤 수 있어요.':LOCAL||!VAPID_KEY?'알림 기능 준비 중입니다.':'이 브라우저는 알림을 지원하지 않아요.'}</div>`;
   if(s==='denied')return `<div class="small" style="color:var(--red)">알림이 차단되어 있어요. 휴대폰 설정 → 애플리케이션에서 이 앱(또는 브라우저)의 알림을 허용해 주세요.</div>`;
+  if(s==='checking')return `<button class="btn ghost block" id="pushon">이 폰 알림 확인·켜기</button>`;
   if(s==='default')return `<button class="btn block" id="pushon">이 폰 알림 켜기</button>`;
   return `<div class="row between"><span>이 폰 알림 <b>켜짐</b></span><button class="chip" id="pushtest">시험 알림</button></div>
     <div class="small muted">시험 알림이 화면 위에 뜨지 않으면 휴대폰 설정 → 알림에서 이 앱의 '팝업으로 표시'를 켜 주세요.</div>
