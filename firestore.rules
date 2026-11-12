@@ -39,6 +39,8 @@ service cloud.firestore {
       match /msgs/{mid} {
         allow read: if member() && myMember() in get(roomPath(rid)).data.members;
         allow create: if member() && request.resource.data.by == myMember() && myMember() in get(roomPath(rid)).data.members;
+        // 내가 보낸 메시지만 수정·삭제 표시
+        allow update: if member() && resource.data.by == myMember() && request.resource.data.by == myMember();
       }
     }
     // 폰 등록: 초대 코드가 맞아야 등록. 관리자는 등록 해제 가능

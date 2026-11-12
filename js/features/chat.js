@@ -32,13 +32,13 @@ function attHtml(m){const f=m.file;if(m.img)return `<button class="attimg" data-
   if(isAud(f))return `<audio src="${f.data}" controls></audio>`;
   return `<button class="attfile" data-view="${m.id}"><span class="fic">${IC.clip}</span><span><b>${esc(f.name)}</b><span class="small muted">${fsize(f.size)}</span></span></button>`}
 function chatMsgHtml(m){const mine=m.by===ME,w=whoOf(m.by);const a=m.act&&ACTS.find(x=>x[0]===m.act);
-  const body=a?`<button class="actmsg" data-play="${a[0]}"><span class="ae">${a[2]}</span><span><b>${a[1]}</b><span class="small muted">눌러서 다시 보기</span></span></button>`
+  const body=m.del?`<div class="bub deleted ${mine?'mine':''}">삭제된 메시지입니다</div>`:a?`<button class="actmsg" data-play="${a[0]}"><span class="ae">${a[2]}</span><span><b>${a[1]}</b><span class="small muted">눌러서 다시 보기</span></span></button>`
     :m.sticker?`<img class="stk" src="${sticker(m.sticker)}" alt="이모티콘" data-mid="${esc(m.id)}">`
     :(m.img||m.file)?attHtml(m)+(m.text?`<div class="bub ${mine?'mine':''}">${esc(m.text)}</div>`:'')
     :`<div class="bub ${mine?'mine':''} ${w.ai?'aib':''}" data-mid="${esc(m.id)}">${esc(m.text)}${m.orig?`<span class="orig">${esc(m.orig)}</span>`:''}${w.ai&&!m.wait?`<button class="tts" data-say="${esc(m.id)}">읽어 주기</button>`:''}</div>`;
   const rq=m.reply?`<button class="rq" data-jump="${esc(m.reply.id)}"><b>${esc(whoOf(m.reply.by).name)}</b> ${esc(m.reply.t)}</button>`:'';
   return `<div class="cm ${mine?'mine':''}" id="cm-${esc(m.id)}">${mine?'':`<span class="av ${w.ai?'aiav':''}" style="background:${w.color}">${w.ai?'AI':esc(w.name.slice(0,1))}</span>`}
-    <div class="cmb">${mine?'':`<span class="cmn">${esc(w.name)}</span>`}${rq}${body}<span class="cmt">${rcHtml(m)}${hhmm(m.ts)}</span></div></div>`}
+    <div class="cmb">${mine?'':`<span class="cmn">${esc(w.name)}</span>`}${rq}${body}<span class="cmt">${rcHtml(m)}${m.edited&&!m.del?'<span class="edtag">수정됨</span>':''}${hhmm(m.ts)}</span></div></div>`}
 // 답장: 말풍선 메뉴에서 '답장' → 입력창 위에 원래 메시지 표시 → 보내면 인용과 함께 저장
 let CREPLY=null;
 function msgSnip(m){return m.text?m.text.replace(/\s+/g,' ').slice(0,40):m.sticker?'이모티콘':m.act?'움직이는 이모티콘':m.img?'사진':m.file?(isImg(m.file)?'사진':isVid(m.file)?'동영상':'파일'):''}
@@ -77,7 +77,7 @@ function talkView(){
     ${composer('k',{emoji:true,trans:false,ph:room?'메시지':'메시지 · @로 AI 부르기',draft:DRAFT})}</div>`;
 }
 function bindTalk(){
-  const talk=$('#talk');talk.style.height=Math.max(320,window.innerHeight/scale()-150)+'px';
+  fitTalk();
   const box=$('#clog');box.scrollTop=box.scrollHeight;bindMsgs(box);
   startFx($('#fxcv'),fxKind());const pick=$('#atpick');
   bindReplyBar();bindRoomBar();if(CROOM)markRoomRead(CROOM);else markFamRead();
@@ -97,14 +97,32 @@ function bindMsgs(root){bindSay(root);
   root.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{const m=findMsg(b.dataset.view);if(m)viewFile(m.file||{data:m.img,type:'image/jpeg',name:'사진'})});
   root.querySelectorAll('[data-mid]').forEach(b=>b.onclick=e=>{if(e.target.closest('.tts'))return;msgMenu(b.dataset.mid)});
   root.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>jumpTo(b.dataset.jump));
-  root.querySelectorAll('[data-rc]').forEach(b=>b.onclick=e=>{e.stopPropagation();readSheet(b.dataset.rc)})}
-function msgMenu(id){const m=findMsg(id);if(!m||m.wait)return;
-  if(!m.text){sheet(`<div class="stack"><div class="card small muted">${esc(whoOf(m.by).name)} · ${esc(msgSnip(m))}</div><div class="actions"><button class="btn" id="mrp">답장</button></div></div>`);$('#mrp').onclick=()=>setReply(id);return}
+  root.querySelectorAll('[data-rc]').forEach(b=>b.onclick=e=>{e.stopPropagation();readSheet(b.dataset.rc)});
+  // 길게 누르면 메뉴 (사진·파일·움직이는 이모티콘도 답장·삭제 가능)
+  root.querySelectorAll('.cm[id^="cm-"]').forEach(el=>{const id=el.id.slice(3);let t=null;
+    el.addEventListener('touchstart',()=>{t=setTimeout(()=>{t=null;msgMenu(id)},550)},{passive:true});
+    ['touchend','touchmove','touchcancel'].forEach(ev=>el.addEventListener(ev,()=>{if(t){clearTimeout(t);t=null}},{passive:true}));
+    el.addEventListener('contextmenu',e=>{e.preventDefault();msgMenu(id)})})}
+// 내가 보낸 메시지 고치기·지우기 (가족 대화방은 공유 데이터, 따로 만든 방은 방 메시지 문서)
+function patchMsg(m,patch){Object.assign(m,patch);
+  if(CROOM){roomsRef().doc(CROOM).collection('msgs').doc(m.id).set({j:JSON.stringify(m),ts:m.ts,by:m.by}).catch(e=>{console.warn(e);toast('저장하지 못했어요')})}else save();
+  if($('#clog'))refreshChat();else if(me().role==='parent')renderSenior()}
+function editMsg(id){const m=findMsg(id);if(!m)return;
+  sheet(`<div class="stack"><h2>메시지 수정</h2><div class="field"><label for="medt">내용</label><textarea id="medt" rows="3">${esc(m.text)}</textarea></div>
+    <div class="actions"><button class="btn ghost" id="medx">취소</button><button class="btn" id="medok">수정</button></div></div>`);
+  $('#medx').onclick=close;$('#medok').onclick=()=>{const t=$('#medt').value.trim();if(!t){toast('내용을 입력해 주세요');return}close();if(t!==m.text)patchMsg(m,{text:t,edited:Date.now(),orig:undefined})}}
+function delMsg(id){const m=findMsg(id);if(!m)return;if(m.file&&m.file.data)delMedia(m.file.data);if(m.img)delMedia(m.img);
+  close();patchMsg(m,{del:true,text:'',file:null,img:null,sticker:null,act:null,orig:undefined});toast('메시지를 삭제했어요')}
+function mineBtns(m){return m.by===ME&&!m.del?`${m.text?'<button class="btn ghost" id="medit">수정</button>':''}<button class="btn ghost" id="mdel" style="color:var(--red)">삭제</button>`:''}
+function bindMine(id){if($('#medit'))$('#medit').onclick=()=>editMsg(id);
+  if($('#mdel'))$('#mdel').onclick=()=>{const b=$('#mdel');if(!b.dataset.sure){b.dataset.sure=1;b.textContent='삭제 확인';return}delMsg(id)}}
+function msgMenu(id){const m=findMsg(id);if(!m||m.wait||m.del)return;
+  if(!m.text){sheet(`<div class="stack"><div class="card small muted">${esc(whoOf(m.by).name)} · ${esc(msgSnip(m))}</div><div class="actions"><button class="btn" id="mrp">답장</button>${mineBtns(m)}</div></div>`);$('#mrp').onclick=()=>setReply(id);bindMine(id);return}
   const ko=/[가-힣]/.test(m.text),to=ko?pref('chatTr','en'):'ko',r=TRM[id+to];
   sheet(`<div class="stack"><div class="card" style="white-space:pre-wrap">${esc(m.text)}</div>
     ${ko?`<div class="row" style="gap:6px"><span class="small muted">번역할 언어</span><select id="mtl" class="chip">${LANGS.map(([c,n])=>`<option value="${c}" ${c===to?'selected':''}>${n}</option>`).join('')}</select></div>`:''}
     ${r?`<div class="tr-out"><div class="tr-t" style="font-size:17px">${esc(r.t)}</div>${r.p?`<div class="tr-p">발음 · ${esc(r.p)}</div>`:''}</div>`:''}
-    <div class="actions"><button class="btn" id="mrp">답장</button><button class="btn ghost" id="mtr">${IC.trans}${r?'다시 번역':'번역'}</button><button class="btn ghost" id="mcp">${IC.copy}복사</button><button class="btn ghost" id="mtt">${IC.spk}읽기</button></div></div>`);
+    <div class="actions"><button class="btn" id="mrp">답장</button><button class="btn ghost" id="mtr">${IC.trans}${r?'다시 번역':'번역'}</button><button class="btn ghost" id="mcp">${IC.copy}복사</button><button class="btn ghost" id="mtt">${IC.spk}읽기</button>${mineBtns(m)}</div></div>`);bindMine(id);
   if($('#mtl'))$('#mtl').onchange=e=>{setPref('chatTr',e.target.value);msgMenu(id)};
   $('#mtr').onclick=async()=>{$('#mtr').textContent='번역 중…';try{TRM[id+to]=await translate(m.text,ko?'ko':'auto',to);msgMenu(id)}catch(e){$('#mtr').textContent='번역';toast(aiErr(e).split('.')[0])}};
   $('#mrp').onclick=()=>setReply(id);
@@ -121,3 +139,11 @@ function trSendSheet(t0){let res=null;const to=pref('chatTr','en');
   $('#tsgo').onclick=()=>run().catch(e=>toast(aiErr(e).split('.')[0]));
   $('#tssend').onclick=async()=>{try{const v=$('#tsq').value.trim();if(!v)return;if(!res)await run();postMsg({text:res.t,orig:v,lang:$('#tsl').value});DRAFT='';close();renderMain()}catch(e){toast(aiErr(e).split('.')[0])}};
 }
+
+// 대화창 높이를 화면에 맞춤: 위쪽 위치부터 아래 칸 위까지. 키보드가 올라오면 아래 칸을 숨기고 다시 맞춤
+function fitTalk(){const t=$('#talk');if(!t)return;const k=scale()||1,vv=window.visualViewport,vh=vv?vv.height:innerHeight;
+  const kb=vv?vv.height<innerHeight*.8:false;document.body.classList.toggle('kbopen',kb);
+  const tb=document.querySelector('.tabbar'),tbh=tb&&!kb?tb.getBoundingClientRect().height:0,top=t.getBoundingClientRect().top;
+  t.style.height=Math.max(240,(vh-top-tbh-12)/k)+'px'}
+if(window.visualViewport)visualViewport.addEventListener('resize',()=>{if($('#talk')){fitTalk();const b=$('#clog');if(b)b.scrollTop=b.scrollHeight}});
+addEventListener('resize',()=>{if($('#talk'))fitTalk()});

@@ -34,7 +34,7 @@ function updateBadge(){if(LOCAL)return;const n=totalUnread();
 function audience(){if(CROOM){const r=ROOMS.find(x=>x.id===CROOM);return r?r.members:[]}return S.members.map(x=>x.id)}
 function readTimes(){if(CROOM){const r=ROOMS.find(x=>x.id===CROOM)||{};return r.reads||{}}const o={};for(const k in READS)o[k]=(READS[k]||{}).fam||0;return o}
 function readersOf(m){const rt=readTimes();return audience().filter(id=>id!==m.by).map(id=>({id,read:id===ME||(rt[id]||0)>=m.ts}))}
-function rcHtml(m){if(LOCAL||!m||m.wait||String(m.by).startsWith('ai:'))return '';const n=readersOf(m).filter(x=>!x.read).length;
+function rcHtml(m){if(LOCAL||!m||m.wait||m.del||String(m.by).startsWith('ai:'))return '';const n=readersOf(m).filter(x=>!x.read).length;
   return `<button class="rc" data-rc="${esc(m.id)}" aria-label="안 읽은 사람 ${n}명">${n||''}</button>`}
 function updateReadCounts(){document.querySelectorAll('[data-rc]').forEach(b=>{const m=findMsg(b.dataset.rc);if(!m)return;const n=readersOf(m).filter(x=>!x.read).length;b.textContent=n||'';b.setAttribute('aria-label','안 읽은 사람 '+n+'명')})}
 function readSheet(id){const m=findMsg(id);if(!m)return;const rs=readersOf(m),no=rs.filter(x=>!x.read),yes=rs.filter(x=>x.read);

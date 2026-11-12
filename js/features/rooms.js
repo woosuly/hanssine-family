@@ -20,7 +20,7 @@ function roomsChanged(){
   ROOMS.forEach(r=>{const t=(r.last||{}).ts||0;if(r.id in PREVLAST&&t>PREVLAST[r.id]&&r.last.by!==ME)inAppAlert({by:r.last.by,text:r.last.t},r.id);PREVLAST[r.id]=t});
   updateReadCounts();updateBadge();
   if(RLOADED&&CROOM&&!ROOMS.some(r=>r.id===CROOM)){CROOM=null;closeRoom();if(SR_TAB==='talk'&&SCHAT.startsWith('room:'))SCHAT='fam'}
-  if($('#roombar')){$('#roombar').outerHTML=roomBarHtml();bindRoomBar()}
+  if($('#roombar')){$('#roombar').outerHTML=roomBarHtml();bindRoomBar();fitTalk()}
   else if($('#tseg')&&!busy())renderSenior()}
 function openRoom(id){closeRoom();CROOM=id;RMSG=[];if(!roomOn())return;
   RUNSUB=roomsRef().doc(id).collection('msgs').orderBy('ts').limitToLast(200).onSnapshot(qs=>{
