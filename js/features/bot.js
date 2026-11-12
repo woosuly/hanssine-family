@@ -77,9 +77,10 @@ function botLog(){return BOT.map((m,mi)=>m.role==='user'?`<div class="cm mine"><
     ${(m.actions||[]).map((a,ai)=>{const [k,main,sub]=actText(a);return `<div class="actc ${a._st||''}"><span class="tag">${k}</span><b>${esc(main)}</b>${sub?`<span class="small muted">${esc(sub)}</span>`:''}
       ${a._st==='done'?`<span class="small" style="color:var(--pine)">${esc(a._msg||'반영 완료')}</span>`:a._st==='skip'?'<span class="small muted">반영 안 함</span>':
       `<span class="row" style="gap:6px"><button class="btn" data-ap="${mi}:${ai}">반영</button>${a.type==='event'||a.type==='tx'?`<button class="btn ghost" data-ae2="${mi}:${ai}">고쳐서 반영</button>`:''}<button class="chip" data-as="${mi}:${ai}">빼기</button></span>`}</div>`}).join('')}</div></div>`).join('')
-  ||`<div class="msg ai" style="max-width:100%">말·글·사진·파일로 알려 주시면 일정·회비·공지·앨범·투표에 반영하고, 앱에 있는 내용도 찾아 드립니다.<br><br>예) "다음 주 토요일 6시 가족 외식 잡아줘"<br>예) "김장 언제였지?"<br>예) 영수증 사진 + "어머니 생신 케이크"</div>`}
+  ||(me().role==='child'?`<div class="msg ai" style="max-width:100%">말·글·사진·파일로 알려 주시면 일정·회비·공지·앨범·투표에 반영하고, 앱에 있는 내용도 찾아 드립니다.<br><br>예) "다음 주 토요일 6시 가족 외식 잡아줘"<br>예) "김장 언제였지?"<br>예) 영수증 사진 + "어머니 생신 케이크"</div>`
+    :`<div class="msg ai" style="max-width:100%">말·글·사진으로 알려 주시면 일정·공지·앨범·투표에 반영하고, 앱에 있는 내용도 찾아 드립니다.<br><br>예) "다음 주 토요일 6시 가족 외식 잡아줘"<br>예) "김장 언제였지?"<br>예) 사진 + "할머니 생신 사진 앨범에 올려줘"</div>`)}
 function botSheet(auto){
-  const sugg=['김장 언제야?','12월 5일 김장 일정 잡아줘','케이크 3만5천원 회비에서 썼어','토요일, 일요일 중 외식 투표 만들어줘','다음 주 화요일 오전 10시 아버지 병원'];
+  const sugg=['김장 언제야?','12월 5일 김장 일정 잡아줘',...(me().role==='child'?['케이크 3만5천원 회비에서 썼어']:[]),'토요일, 일요일 중 외식 투표 만들어줘','다음 주 화요일 오전 10시 아버지 병원'];
   sheet(`<div class="bot"><div class="row between"><h2>AI 비서</h2><span class="small muted">${AIS[aiCfg().def][0]} · 대화방과 별도</span></div>
     <div class="blog" id="blog">${botLog()}</div>
     <div class="sugg">${sugg.map(s=>`<button class="chip" data-s="${esc(s)}">${esc(s)}</button>`).join('')}</div>
