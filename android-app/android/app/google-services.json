@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "198487923702",
+    "project_id": "hanssine-family",
+    "storage_bucket": "hanssine-family.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:198487923702:android:20433c7811c216d33185d7",
+        "android_client_info": {
+          "package_name": "com.hanssine.family"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCL_USTe-N5UI4DlYIBuQ9I2TAX9-ltaLI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
