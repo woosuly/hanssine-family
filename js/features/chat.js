@@ -68,7 +68,7 @@ function refreshChat(){const box=$('#clog');if(box){box.innerHTML=chatLogHtml();
 function talkView(){
   const fx=fxKind();
   if(RLOADED&&CROOM&&!ROOMS.some(r=>r.id===CROOM)){closeRoom();CROOM=null}const room=CROOM&&ROOMS.find(r=>r.id===CROOM);
-  return `<div class="talk" id="talk">${roomBarHtml()}<div class="row between"><h2>${room?esc(room.title):'가족 대화'}</h2>${room?`<button class="ibtn rmenu" id="rset" aria-label="방 메뉴"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>`:`<button class="chip" id="fxc">효과 · ${FXS.find(x=>x[0]===pref('fx','off'))[1]}${pref('fx','off')==='auto'&&fx!=='off'?`(${FXS.find(x=>x[0]===fx)[1]})`:''}</button>`}</div>
+  return `<div class="talk" id="talk">${roomBarHtml()}<div class="row between"><h2>${room?esc(room.title):'가족 대화'}</h2><span class="talkh"><button class="ibtn srch" id="csrch" aria-label="대화 검색"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>${room?`<button class="ibtn rmenu" id="rset" aria-label="방 메뉴"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>`:`<button class="chip" id="fxc">효과 · ${FXS.find(x=>x[0]===pref('fx','off'))[1]}${pref('fx','off')==='auto'&&fx!=='off'?`(${FXS.find(x=>x[0]===fx)[1]})`:''}</button>`}</span></div>
     ${room?`<div class="small muted rmem">${esc(roomMembers(room))}</div>`:''}
     <div class="clogw"><div class="clog" id="clog">${chatLogHtml()}</div><canvas class="fxc" id="fxcv"></canvas></div>
     ${room?'':`<div class="typing" id="typing">${typingText()}</div>`}<div id="rbar">${replyBarHtml()}</div>
@@ -88,6 +88,7 @@ function bindTalk(){
   document.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{c.q.value=c.q.value.replace(/@\w*$/,'')+'@'+b.dataset.at+' ';DRAFT=c.q.value;pick.hidden=true;c.q.focus()});
   bindEmo(id=>{postChat('',id);$('#emop').hidden=true;refreshChat()},e=>{c.q.value+=e;DRAFT=c.q.value},id=>{postMsg({act:id});$('#emop').hidden=true;refreshChat();playAct(id)});
   if($('#rset'))$('#rset').onclick=()=>roomMenu(CROOM);
+  if($('#csrch'))$('#csrch').onclick=chatSearch;
   if($('#fxc'))$('#fxc').onclick=()=>{sheet(`<div class="stack"><h2>대화 배경 효과</h2><div class="glist2">${FXS.map(([k,n])=>`<button data-fx="${k}" class="${pref('fx','off')===k?'on':''}">${n}${k==='auto'?' <span class="small muted">(오늘 날씨·계절에 맞춤)</span>':''}</button>`).join('')}</div></div>`);
     document.querySelectorAll('[data-fx]').forEach(b=>b.onclick=()=>{setPref('fx',b.dataset.fx);close();renderMain()})};
 }
@@ -163,3 +164,12 @@ function fitTalk(){const t=$('#talk');if(!t)return;const k=scale()||1,vv=window.
   t.style.height=Math.max(240,(vh-top-tbh-12)/k)+'px'}
 if(window.visualViewport)visualViewport.addEventListener('resize',()=>{if($('#talk')){fitTalk();const b=$('#clog');if(b)b.scrollTop=b.scrollHeight}});
 addEventListener('resize',()=>{if($('#talk'))fitTalk()});
+
+// 대화 검색: 지금 방의 메시지에서 찾고, 누르면 그 메시지로 이동
+function chatSearch(){sheet(`<div class="stack"><h2>대화 검색</h2><div class="field"><input id="sq" type="search" placeholder="찾을 말" autocomplete="off"></div><div class="sres" id="sres"></div></div>`);
+  const run=()=>{const q=$('#sq').value.trim();if(!q){$('#sres').innerHTML='';return}const ql=q.toLowerCase();
+    const hits=curMsgs().filter(m=>!m.del&&!m.sys&&m.text&&m.text.toLowerCase().includes(ql)).slice(-100).reverse();
+    const hl=t=>{const i=t.toLowerCase().indexOf(ql),a=Math.max(0,i-20);return (a?'…':'')+esc(t.slice(a,i))+'<mark>'+esc(t.slice(i,i+q.length))+'</mark>'+esc(t.slice(i+q.length,i+q.length+60))};
+    $('#sres').innerHTML=hits.length?hits.map(m=>`<button data-sh="${esc(m.id)}"><span class="small muted">${esc(whoOf(m.by).name)} · ${new Date(m.ts).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span><br>${hl(m.text)}</button>`).join(''):'<div class="small muted">찾는 말이 없어요</div>';
+    document.querySelectorAll('[data-sh]').forEach(b=>b.onclick=()=>{close();const id=b.dataset.sh;setTimeout(()=>{jumpTo(id);const el=document.getElementById('cm-'+id);if(el){el.classList.add('hit');setTimeout(()=>el.classList.remove('hit'),2000)}},150)})};
+  $('#sq').oninput=()=>{clearTimeout(run.t);run.t=setTimeout(run,200)};setTimeout(()=>$('#sq').focus(),100)}

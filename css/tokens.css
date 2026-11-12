@@ -40,3 +40,10 @@ img{max-width:100%}
 :root{--voice:#2F5FA8}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--voice:#6F9BE0}}
 :root[data-theme="dark"]{--voice:#6F9BE0}
+
+/* 위쪽 제목 띠 색 (화면 모드와 무관하게 스킨 진한 색) */
+:root{--band:#2E6A4E}
+:root[data-skin="sea"]{--band:#2D5F8B}
+:root[data-skin="sunset"]{--band:#B4532A}
+:root[data-skin="lavender"]{--band:#6A55A3}
+:root[data-skin="ink"]{--band:#3B4148}

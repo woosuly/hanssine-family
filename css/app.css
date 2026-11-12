@@ -701,3 +701,17 @@ body.kbopen .tabbar{display:none}
 .profbtn{border:0;background:none;padding:0;position:relative;flex:none}
 .profbtn i{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);font-style:normal;font-size:10px;background:var(--pine);color:var(--pine-ink);border-radius:999px;padding:1px 6px;white-space:nowrap}
 .av.mid{width:56px;height:56px;font-size:22px}
+
+/* 위쪽 제목 줄: 스킨 색 띠 */
+.wrap>.top{background:var(--band);color:#fff;margin:-12px 0 10px;padding-block:10px;box-shadow:0 0 0 100vmax var(--band);clip-path:inset(0 -100vmax)}
+.wrap>.top .brand{color:#fff}
+.wrap>.top .gear{background:rgba(255,255,255,.16);border-color:transparent;color:#fff}
+.wrap>.top .backlink{color:#fff}
+/* 대화 검색 */
+.talkh{display:flex;align-items:center;gap:6px}
+.ibtn.srch{width:38px;height:38px}
+.ibtn.srch svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
+.sres{display:flex;flex-direction:column;gap:2px;max-height:60vh;overflow-y:auto}
+.sres button{border:0;background:none;text-align:left;padding:10px 6px;border-bottom:1px solid var(--line);color:var(--ink)}
+.sres mark{background:var(--pine-soft);color:var(--pine);font-weight:700;padding:0 1px;border-radius:3px}
+.cm.hit .bub{outline:2px solid var(--pine);outline-offset:2px;transition:outline-color 1.5s}
