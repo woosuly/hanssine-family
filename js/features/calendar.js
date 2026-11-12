@@ -13,7 +13,7 @@ function evOn(e,d){const k=ymd(d);
 function itemsOn(d){
   const k=ymd(d),out=[];
   S.events.filter(e=>canSee(e)&&evOn(e,d)).forEach(e=>out.push({...e}));
-  S.members.forEach(m=>{for(const y of [d.getFullYear()-1,d.getFullYear()]){const b=bdIn(m,y);if(b&&ymd(b)===k)out.push({id:'b'+m.id,date:k,title:m.name+' 생일'+(m.bd.cal==='lunar'?' (음력)':''),type:'bday',scope:'all'})}});
+  S.members.forEach(m=>{for(const y of [d.getFullYear()-1,d.getFullYear()]){const b=bdIn(m,y);if(b&&ymd(b)===k)out.push({id:'b'+m.id,date:k,title:m.name+(m.role==='parent'?' 생신':' 생일')+(m.bd.cal==='lunar'?' (음력)':''),type:'bday',scope:'all'})}});
   return out;
 }
 function upcoming(days){const t=today0(),out=[],seen=new Set();for(let i=0;i<=days;i++){const d=addDays(t,i);itemsOn(d).forEach(e=>{const key=e.id+(e.repeat&&e.repeat!=='none'?ymd(d):'');if(seen.has(key))return;seen.add(key);out.push({...e,_d:d,_n:i})})}return out}

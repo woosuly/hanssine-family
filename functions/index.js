@@ -72,7 +72,11 @@ exports.notifyNewItem = onDocumentCreated('families/hanssine/items/{id}', async 
   const who = members[it.by];
   const name = who ? who.name : '가족';
   let title, body, tag;
-  if (doc.k === 'chat') {
+  if (doc.k === 'chat' && it.sys) {
+    title = '가족 알림';
+    body = it.text || '';
+    tag = 'ann-' + it.id;
+  } else if (doc.k === 'chat') {
     title = `${name} · 가족 대화`;
     body = it.text || (it.sticker || it.act ? '이모티콘을 보냈어요' : it.img ? '사진을 보냈어요' : it.file ? '파일을 보냈어요' : '메시지를 보냈어요');
     tag = 'chat';

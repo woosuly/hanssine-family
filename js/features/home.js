@@ -22,7 +22,7 @@ function renderMain(){
     ${body}</div>
     ${TAB==='album'?`<button class="fab" id="add">사진 올리기</button><input type="file" id="file" accept="image/*" hidden>`:''}
     <nav class="tabbar"><div class="in">${tabs().map(([k,n])=>`<button data-tab="${k}" class="${TAB===k?'on':''}">${ICON[k]}${n}${k==='talk'?badgeHtml():''}</button>`).join('')}</div></nav>`;
-  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;stopListen();render();window.scrollTo(0,0)});
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;SELM=false;SELP.clear();stopListen();render();window.scrollTo(0,0)});
   if($('#gear'))$('#gear').onclick=()=>{if(!SUBPAGES[TAB])PREV_TAB=TAB;TAB='set';render();window.scrollTo(0,0)};
   if($('#tback'))$('#tback').onclick=()=>{TAB=PREV_TAB||'home';render()};
   ({home:bindHomeTab,talk:bindTalk,album:bindAlbum,cal:bindCal,dues:bindDues,set:bindSet,trans:()=>{$('#transroot').style.height=Math.max(380,window.innerHeight/scale()-150)+'px';transSheet()}})[TAB]();
@@ -37,6 +37,7 @@ function homeView(){
   return `<div class="stack" style="gap:10px;margin-top:6px">
     ${pushState()==='default'?`<div class="card row between" style="gap:10px"><span style="flex:1;min-width:0">새 대화·사진·일정을 알림으로 받아 보세요</span><button class="btn" id="pushon">알림 켜기</button></div>`:''}
     <button class="card wxcard" id="wx">${wxIcon(w[2],44)}<span style="flex:1;min-width:0"><span class="t num">${w[0]}°</span> <span class="small muted">${esc(S.weather.loc)} · 미세먼지 ${w[4]}</span><br><span class="small muted">${wxNote()}</span></span><span class="link">›</span></button>
+    ${annBannerHtml()}
     <button class="aibar" id="ask"><span class="av aiav" style="background:${AIS[aiCfg().def][1]}">AI</span><span class="muted">AI 비서에게 말하기 · 등록 · 찾기</span>${IC.mic}</button>
     <div class="hgrid">
       <div class="card" ${r!=='child'?'style="grid-column:1/-1"':''}><div class="row between"><b>공지</b><button class="link" id="nall">전체</button></div>

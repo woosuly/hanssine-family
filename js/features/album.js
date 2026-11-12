@@ -1,6 +1,7 @@
 
 /* features/album */
-let ALBUMF=null;
+let ALBUMF=null,SELM=false;const SELP=new Set();
+const canEditPh=p=>p.by===ME||isAdmin();
 // 폴더는 가족이 직접 만듦. 예전 기본 폴더(손주·풍경·모임)는 사진이 없으면 정리
 function ensureFolders(){if(!S.folders)S.folders=[];if(!LOCAL&&!SYNC.live)return;if(S.foldersV===2)return;
   const used=new Set(S.photos.map(p=>p.folder));S.folders=S.folders.filter(f=>!['f_grand','f_scene','f_meet'].includes(f.id)||used.has(f.id));S.foldersV=2;save()}
@@ -11,11 +12,12 @@ function albumView(){
   const people=[...new Set(S.photos.map(p=>p.by))].map(mem);
   const vis=S.photos.filter(canSee).filter(p=>!FILTER.by||p.by===FILTER.by).sort((a,b)=>b.date.localeCompare(a.date));
   const bySel=`<select id="byf" class="chip" aria-label="올린 사람"><option value="">올린 사람 전체</option>${people.map(p=>`<option value="${p.id}" ${FILTER.by===p.id?'selected':''}>${esc(byLabel(p))}</option>`).join('')}</select>`;
-  const grid=list=>list.length?`<div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr))">${list.map(p=>{const rc=Object.keys(p.reacts||{}).length;return `<button class="ph" data-ph="${p.id}"><img src="${p.img}" alt="${esc(p.caption)}" loading="lazy">${rc||cmtCount(p)?`<span class="rcb num">${rc?'♥ '+rc:''}${rc&&cmtCount(p)?' · ':''}${cmtCount(p)?'댓글 '+cmtCount(p):''}</span>`:''}</button>`}).join('')}</div>`:`<div class="card muted">사진이 없습니다</div>`;
+  const grid=list=>list.length?`<div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr))">${list.map(p=>{const rc=Object.keys(p.reacts||{}).length;return `<button class="ph ${SELM&&SELP.has(p.id)?'sel':''}" data-ph="${p.id}">${SELM?`<i class="ck">${SELP.has(p.id)?'✓':''}</i>`:''}<img src="${p.img}" alt="${esc(p.caption)}" loading="lazy">${rc||cmtCount(p)?`<span class="rcb num">${rc?'♥ '+rc:''}${rc&&cmtCount(p)?' · ':''}${cmtCount(p)?'댓글 '+cmtCount(p):''}</span>`:''}</button>`}).join('')}</div>`:`<div class="card muted">사진이 없습니다</div>`;
   if(ALBUMF){const f=S.folders.find(x=>x.id===ALBUMF);const name=ALBUMF==='all'?'전체 사진':ALBUMF==='mem'?'추억 · 지난해 이맘때':f?f.name:'';
     const list=ALBUMF==='all'?vis:ALBUMF==='mem'?memories(vis):vis.filter(p=>p.folder===ALBUMF);
-    return `<div class="albh"><button class="backlink" id="fback">${BACKSVG}폴더</button><b>${esc(name)}</b><span class="small muted num">${list.length}장</span>${canFolder(f)?`<button class="chip" id="fedit">편집</button>`:''}</div>
-      <div class="row" style="margin:8px 0">${bySel}</div>${grid(list)}`}
+    return `<div class="albh"><button class="backlink" id="fback">${BACKSVG}폴더</button><b>${esc(name)}</b><span class="small muted num">${list.length}장</span>${list.length?`<button class="chip ${SELM?'on':''}" id="selm">${SELM?'선택 끝':'선택'}</button>`:''}${canFolder(f)&&!SELM?`<button class="chip" id="fedit">편집</button>`:''}</div>
+      <div class="row" style="margin:8px 0">${bySel}</div>${grid(list)}
+      ${SELM?`<div class="selbar"><div class="in"><b>${SELP.size}장 선택</b><button class="btn ghost" id="selmv" ${SELP.size?'':'disabled'}>폴더로 옮기기</button><button class="btn" id="seldel" style="background:var(--red)" ${SELP.size?'':'disabled'}>삭제</button></div></div>`:''}`}
   const cards=[{id:'all',name:'전체 사진',list:vis},...(memories(vis).length?[{id:'mem',name:'추억',list:memories(vis)}]:[]),...S.folders.map(f=>({id:f.id,name:f.name,list:vis.filter(p=>p.folder===f.id)}))];
   return `<div class="row between" style="margin-top:8px"><h2>앨범</h2>${bySel}</div>
     <div class="folders">${cards.map(c=>`<button class="fcard" data-f="${c.id}"><span class="fcov">${c.list[0]?`<img src="${c.list[0].img}" alt="">`:IC.folder}</span><b>${esc(c.name)}</b><span class="small muted num">${c.list.length}장</span></button>`).join('')}
@@ -24,10 +26,15 @@ function albumView(){
 function bindAlbum(){
   $('#byf').onchange=e=>{FILTER.by=e.target.value;renderMain()};
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ALBUMF=b.dataset.f;renderMain();window.scrollTo(0,0)});
-  if($('#fback'))$('#fback').onclick=()=>{ALBUMF=null;renderMain()};
+  if($('#fback'))$('#fback').onclick=()=>{ALBUMF=null;SELM=false;SELP.clear();renderMain()};
+  if($('#selm'))$('#selm').onclick=()=>{SELM=!SELM;SELP.clear();renderMain()};
+  if($('#selmv'))$('#selmv').onclick=()=>moveSel();
+  if($('#seldel'))$('#seldel').onclick=()=>delSel();
   if($('#fnew'))$('#fnew').onclick=()=>folderForm();
   if($('#fedit'))$('#fedit').onclick=()=>folderForm(S.folders.find(x=>x.id===ALBUMF));
-  document.querySelectorAll('[data-ph]').forEach(b=>b.onclick=()=>photoDetail(b.dataset.ph));
+  document.querySelectorAll('[data-ph]').forEach(b=>b.onclick=()=>{const id=b.dataset.ph;if(!SELM)return photoDetail(id);
+    const p=S.photos.find(x=>x.id===id);if(!p)return;if(!canEditPh(p)){toast('다른 가족이 올린 사진은 고를 수 없어요');return}
+    SELP.has(id)?SELP.delete(id):SELP.add(id);const y=scrollY;renderMain();scrollTo(0,y)});
   $('#add').onclick=()=>$('#file').click();
   $('#file').onchange=e=>{const f=e.target.files[0];if(f)compress(f).then(uploadForm).catch(()=>{});e.target.value=''};
 }
@@ -84,3 +91,15 @@ function photoDetail(id){
   if($('#del'))$('#del').onclick=()=>{$('#del').outerHTML=`<button class="btn block" style="background:var(--red)" id="del2">삭제 확인</button>`;$('#del2').onclick=()=>{delMedia(p.img);S.photos=S.photos.filter(x=>x.id!==id);save();close();renderMain()}};
 }
 function newPhotos(){return S.photos.filter(canSee).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6)}
+
+// 여러 장 선택: 폴더로 옮기기·삭제 (내가 올린 사진만, 관리자는 전부)
+function moveSel(){const ids=[...SELP];
+  sheet(`<div class="stack"><h2>${ids.length}장 옮기기</h2><div class="field"><label for="pfold">옮길 폴더</label>${folderSel(ALBUMF&&S.folders.some(f=>f.id===ALBUMF)?ALBUMF:'')}</div><button class="btn block" id="mvok">옮기기</button></div>`);
+  const go=fid=>{S.photos.forEach(p=>{if(SELP.has(p.id)){p.folder=fid;p.tag=fname(fid)}});save();SELM=false;SELP.clear();close();renderMain();toast(`${ids.length}장을 ${fname(fid)}(으)로 옮겼어요`)};
+  $('#pfold').onchange=e=>{if(e.target.value==='__new')folderForm(null,fid=>go(fid))};
+  $('#mvok').onclick=()=>{const v=$('#pfold').value;if(v!=='__new')go(v)}}
+function delSel(){const n=SELP.size;
+  sheet(`<div class="stack"><h2>사진 ${n}장 삭제</h2><div>고른 사진 ${n}장을 지울까요? 지운 사진은 되돌릴 수 없어요.</div>
+    <div class="actions"><button class="btn ghost" id="dx">취소</button><button class="btn" id="dok" style="background:var(--red)">삭제</button></div></div>`);
+  $('#dx').onclick=close;
+  $('#dok').onclick=()=>{S.photos.filter(p=>SELP.has(p.id)).forEach(p=>delMedia(p.img));S.photos=S.photos.filter(p=>!SELP.has(p.id));save();SELM=false;SELP.clear();close();renderMain();toast(`${n}장을 지웠어요`)}}

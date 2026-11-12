@@ -66,7 +66,7 @@ function startListen(){stopSync();return new Promise(res=>{const done=()=>{if(SY
 function fixOldDues(){const d=S.dues;if(!d)return;const untouched=!(d.tx||[]).length&&!(d.accounts||[]).length&&!Object.values(d.paid||{}).some(m=>Object.values(m||{}).some(Boolean));
   if(untouched&&d.mode==='monthly'&&d.monthly===50000&&d.treasurer==='h1'){S.dues={mode:'',monthly:0,perHouse:{},treasurer:'',paid:{},accounts:[],tx:[]};save()}}
 function finishBoot(){if(!SYNC.cache.master){const keep=S.trPacks;S=cleanSeed();S.trPacks=keep||{};S.master.member=ME;flush()}else fixOldDues();
-  SYNC.booted=true;roomsListen();render();pushAfterBoot()}
+  SYNC.booted=true;roomsListen();render();pushAfterBoot();setTimeout(annCheck,4000)}
 
 async function boot(){
   if(LOCAL){render();return}

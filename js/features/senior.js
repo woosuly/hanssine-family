@@ -20,10 +20,11 @@ function allPhotos(){return S.photos.filter(canSee).sort((a,b)=>b.date.localeCom
 function srBg(){const v=pref('bg','');if(v&&(v.startsWith('data:')||isRemote(v)))return v;const p=S.photos.find(x=>x.id===v);return p?p.img:(allPhotos().find(x=>x.tag==='풍경')||allPhotos()[0]||{img:art('mountain')}).img}
 function unseenPhotos(){return allPhotos().filter(p=>p.by!==ME&&!(p.reacts||{})[ME]&&(today0()-parse(p.date))/864e5<=14)}
 function srHome(){
-  const t=today0();const nx=upcoming(60).filter(e=>e.type!=='etc')[0];
+  const t=today0();const nx=upcoming(60).filter(e=>e.type!=='etc'&&!(e._n===0&&isAnniv(e)&&(e.scope||'all')==='all'))[0];
   const nt=S.notices.filter(canSee).filter(n=>n.by!==ME&&(t-parse(n.date))/864e5<=7).sort((a,b)=>b.date.localeCompare(a.date))[0];
   const nu=unseenPhotos().length;
   return `${nt?`<button class="sr-line notice" id="ntc"><span>${esc(mem(nt.by).name)}: ${esc(nt.text)}</span><b>공지</b></button>`:''}
+    ${annSoon().filter(e=>e._n===0).map(e=>`<div class="sr-line ann"><span>오늘은 ${esc(e.title)}</span><b>오늘</b></div>`).join('')}
     ${nx?`<button class="sr-line" id="dd"><span>${esc(nx.title)}</span><b>${dday(nx._n)}</b></button>`:''}
     <div class="frame" id="frame"><img src="${srBg()}" alt="홈 배경 사진">
       <button class="newph ${nu?'':'quiet'}" id="newph">${nu?`새 사진 ${nu}장 보기`:'사진첩 보기'}</button></div>

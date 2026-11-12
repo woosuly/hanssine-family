@@ -715,3 +715,20 @@ body.kbopen .tabbar{display:none}
 .sres button{border:0;background:none;text-align:left;padding:10px 6px;border-bottom:1px solid var(--line);color:var(--ink)}
 .sres mark{background:var(--pine-soft);color:var(--pine);font-weight:700;padding:0 1px;border-radius:3px}
 .cm.hit .bub{outline:2px solid var(--pine);outline-offset:2px;transition:outline-color 1.5s}
+
+/* 기념일 띠 */
+.annb{display:flex;flex-direction:column;gap:6px}
+.annl{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:9px 12px;text-align:left;color:var(--ink)}
+.annl i{font-style:normal;font-size:11px;font-weight:700;color:var(--sun);border:1px solid currentColor;border-radius:6px;padding:1px 6px;flex:none}
+.annl span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.annl b{color:var(--sun);flex:none}
+.annl.today{background:var(--pine-soft);border-color:var(--pine)}
+.annl.today b,.annl.today i{color:var(--pine)}
+.sr-line.ann{background:var(--pine-soft)}
+/* 앨범 여러 장 선택 */
+.ph.sel::after{content:"";position:absolute;inset:0;border:3px solid var(--pine);border-radius:12px;background:rgba(0,0,0,.15)}
+.ph .ck{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.25);z-index:1;display:grid;place-items:center;color:#fff;font-size:14px;font-weight:700}
+.ph.sel .ck{background:var(--pine)}
+.selbar{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:7;display:flex;justify-content:center;padding:0 12px}
+.selbar .in{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:14px;padding:8px 10px;width:100%;max-width:536px}
+.selbar .in b{flex:1}
