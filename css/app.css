@@ -783,3 +783,9 @@ body.kbopen .tabbar{display:none}
 .bact{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .bact button{display:flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--ink)}
 .bact svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8}
+
+/* 부모님 날짜: 좁은 폰에서 요일이 다음 줄로 넘어가지 않게 */
+.sr-day b{white-space:nowrap}
+.sr-day{min-width:0;flex:1 1 auto}
+.sr-wx{flex:none}
+.sr-wx small{white-space:nowrap}
