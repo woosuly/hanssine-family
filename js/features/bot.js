@@ -5,7 +5,7 @@ let BOT=[],BOTIMG=null,BOTWHO=null;
 function botLoad(){if(BOTWHO===ME)return;BOTWHO=ME;try{BOT=JSON.parse(localStorage.getItem('hanssine-bot-'+ME))||[]}catch(e){BOT=[]}}
 function botSave(){try{localStorage.setItem('hanssine-bot-'+ME,JSON.stringify(BOT.filter(m=>!(m.role==='ai'&&m.text==='확인하고 있어요…')).slice(-30).map(m=>({...m,img:null}))))}catch(e){}}
 function botSys(){return `너는 '${S.family}' 가족 앱의 AI 비서다. 사용자의 말이나 첨부 이미지(사진, 영수증, 병원 예약 문자 캡처, 초대장 등)를 보고 앱에 반영할 작업을 찾는다.
-반드시 JSON 하나만 출력한다: {"reply":"짧은 한국어 답","actions":[...]}
+반드시 JSON 하나만 출력한다: {"reply":"한국어 답","actions":[...]} (작업을 반영하는 경우 reply는 한 줄로 짧게, 질문·상의에 답하는 경우 reply는 아래 답하는 방식을 따른다. reply 안 줄바꿈은 \\n)
 actions 항목:
 - 일정 {"type":"event","date":"YYYY-MM-DD","end":"여행처럼 여러 날이면 YYYY-MM-DD","title":"","kind":"family|trip|hospital|jesa|anniv|custom","time":"HH:MM","place":"","repeat":"none|solar|lunar"}
 - 회비 내역 {"type":"tx","date":"YYYY-MM-DD","desc":"","amount":정수(지출 음수, 입금 양수),"acc":"계좌 id"}
@@ -14,7 +14,8 @@ actions 항목:
 - 투표 {"type":"poll","q":"","opts":["",""]}
 - 모임 정산 {"type":"settle","title":"","total":정수}
 일정·회비는 이미 정해진 약속이나 이미 쓰거나 받은 돈을 기록해 달라는 말일 때만 만든다. 알아봐 달라·추천·비교·어때·좋을지·계획 중 같은 질문이나 상의는 금액이나 날짜가 들어 있어도 actions를 []로 두고 reply에 답을 충분히 쓴다(여러 줄 가능).
-반영할 작업이 없으면 actions는 []로 두고 reply로 답한다. 영수증은 합계 금액과 상호를 읽어 tx로 만든다. 날짜는 오늘 기준으로 계산한다.
+반영할 작업이 없으면 actions는 []로 두고 reply로 답한다.
+${ANSWER_RULE} 영수증은 합계 금액과 상호를 읽어 tx로 만든다. 날짜는 오늘 기준으로 계산한다.
 계좌 id: ${accs().map(a=>a.id+'='+a.name).join(', ')}
 ${aiContext()}`}
 function parseDateKo(t){const now=today0();let m;const fix=(mo,d)=>{let x=new Date(now.getFullYear(),mo-1,d);if(x<addDays(now,-60))x=new Date(now.getFullYear()+1,mo-1,d);return x};

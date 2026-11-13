@@ -9,7 +9,7 @@ async function callAI(system,msgs,prov,img){
   const txt=m=>m.text||'이 이미지를 보고 판단해 줘';
   if(provider==='gemini'){
     res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mdl}:generateContent?key=${encodeURIComponent(key)}`,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:msgs.map((m,i)=>({role:m.role==='user'?'user':'model',parts:i===last&&im?[{inline_data:{mime_type:im.mime,data:im.b64}},{text:txt(m)}]:[{text:txt(m)}]}))})});
+      body:JSON.stringify({systemInstruction:{parts:[{text:system}]},generationConfig:{maxOutputTokens:8192},contents:msgs.map((m,i)=>({role:m.role==='user'?'user':'model',parts:i===last&&im?[{inline_data:{mime_type:im.mime,data:im.b64}},{text:txt(m)}]:[{text:txt(m)}]}))})});
     j=await res.json();if(!res.ok)throw new Error(j.error?.message||res.status);return (j.candidates?.[0]?.content?.parts||[]).map(p=>p.text).join('');
   }
   if(provider==='openai'){
@@ -18,7 +18,7 @@ async function callAI(system,msgs,prov,img){
     j=await res.json();if(!res.ok)throw new Error(j.error?.message||res.status);return j.choices[0].message.content;
   }
   res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:mdl,max_tokens:1000,system,messages:msgs.map((m,i)=>({role:m.role==='user'?'user':'assistant',content:i===last&&im?[{type:'image',source:{type:'base64',media_type:im.mime,data:im.b64}},{type:'text',text:txt(m)}]:txt(m)}))})});
+    body:JSON.stringify({model:mdl,max_tokens:4000,system,messages:msgs.map((m,i)=>({role:m.role==='user'?'user':'assistant',content:i===last&&im?[{type:'image',source:{type:'base64',media_type:im.mime,data:im.b64}},{type:'text',text:txt(m)}]:txt(m)}))})});
   j=await res.json();if(!res.ok)throw new Error(j.error?.message||res.status);return j.content.map(c=>c.text||'').join('');
 }
 function aiErr(e){
@@ -41,7 +41,16 @@ function aiContext(pub){const vis=x=>pub?x.scope==='all':canSee(x);
   L.push(`[날씨 예보, 예시 데이터] ${S.weather.loc}: `+S.weather.week.map((w,i)=>`${md(addDays(t,i))} ${w[2]} ${w[1]}~${w[0]}° 강수 ${w[3]}%`).join(' / '));
   return L.join('\n');
 }
-function aiSystem(pub){return `너는 '${S.family}' 가족 앱의 AI 비서다.${pub?' 지금은 가족 단체 대화방에서 호출되었고, 대화 기록 중 마지막 질문에 답한다. 답은 가족 모두가 본다.':''} 가족 질문은 아래 데이터만 근거로 짧고 쉬운 한국어로 답한다. 데이터에 없는 가족 정보는 모른다고 말한다. 일반 질문(요리, 생활, 여행, 상식)은 일반 지식으로 답하되, 건강·약 관련은 일반 정보만 말하고 담당 의사 상담을 권한다. ${isSenior()?'질문자는 70대 어르신이므로 3문장 이내, 존댓말로 아주 쉽게 답한다.':'답은 5문장 이내로 한다.'}\n\n${aiContext(pub)}`}
+// 질문·추천·상의에 답하는 방식 (가족 대화방·AI 비서 공통)
+const ANSWER_RULE=`답하는 방식:
+- 결론을 첫 줄에 쓴다.
+- 추천이나 판단에는 이유 2~3가지를 붙인다. 거리, 시간, 비용, 혼잡도처럼 확인할 수 있는 근거를 쓴다.
+- 숙소·식당·장소는 2~4곳을 비교한다. 이름, 위치(역·동네), 가격대, 고른 이유를 함께 쓴다.
+- 마지막에 알아둘 점(예약 시점, 주의할 점)을 1~2줄 붙인다.
+- 확실하지 않은 가격이나 운영 정보에는 '확인 필요'라고 표시한다.
+- 앞선 대화에서 나온 조건(날짜, 장소, 예산, 인원)을 이어서 반영한다. 정보가 조금 부족하면 되묻기보다 가정을 밝히고 먼저 구체적으로 답한다.
+- 간단한 사실 질문은 한두 문장으로 끝낸다.`;
+function aiSystem(pub){return `너는 '${S.family}' 가족 앱의 AI 비서다.${pub?' 지금은 가족 단체 대화방에서 호출되었고, 대화 기록 중 마지막 질문에 답한다. 답은 가족 모두가 본다.':''} 가족 질문은 아래 데이터만 근거로 쉬운 한국어로 답한다. 데이터에 없는 가족 정보는 모른다고 말한다. 일반 질문(요리, 생활, 여행, 상식)은 일반 지식으로 답하되, 건강·약 관련은 일반 정보만 말하고 담당 의사 상담을 권한다. ${isSenior()?'질문자는 70대 어르신이므로 존댓말로 아주 쉽게, 결론 한 문장과 이유 한두 가지로 4문장 이내로 답한다.':ANSWER_RULE}\n\n${aiContext(pub)}`}
 // 키로 실제 쓸 수 있는 모델 목록 (최신순)
 async function listModels(prov,key){let r,j;
   if(prov==='gemini'){r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${encodeURIComponent(key)}`);j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);
