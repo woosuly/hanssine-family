@@ -770,3 +770,16 @@ body.kbopen .tabbar{display:none}
 .trl.ot{background:var(--pine-soft);border-color:transparent}
 .pc.hear{background:var(--pine-soft)}
 .phrq{display:flex;flex-direction:column;gap:8px}
+
+/* 공감·말풍선 메뉴 보강 */
+.bub,.stk,.attimg{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.mpop-rx{display:flex;justify-content:space-between;gap:2px;padding:2px 2px 6px;border-bottom:1px solid var(--line)}
+.mpop-rx button{border:0;background:none;font-size:24px;line-height:1;padding:6px;border-radius:50%}
+.mpop-rx button.on{background:var(--pine-soft)}
+.rxs{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.cm.mine .rxs{justify-content:flex-end}
+.rx{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:1px 8px;font-size:13px;color:var(--ink)}
+.rx.on{border-color:var(--pine);background:var(--pine-soft)}
+.bact{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.bact button{display:flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--ink)}
+.bact svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8}

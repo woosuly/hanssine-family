@@ -84,6 +84,7 @@ function localSearch(q){
 let BOTFILE=null;
 function botLog(){return BOT.map((m,mi)=>m.role==='user'?`<div class="cm mine"><div class="cmb">${m.img?`<img class="bimg" src="${m.img}" alt="">`:''}${m.fname?`<div class="attfile"><span class="fic">${IC.clip}</span><b>${esc(m.fname)}</b></div>`:''}${m.text?`<div class="bub mine">${esc(m.text)}</div>`:''}</div></div>`
   :`<div class="cm"><span class="av aiav" style="background:${AIS[aiCfg().def][1]}">AI</span><div class="cmb"><div class="bub aib">${esc(m.text)}${m.found&&m.found.length?`<ul class="found">${m.found.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>`:''}${m.note?`<span class="small muted" style="display:block;margin-top:4px">${esc(m.note)}</span>`:''}</div>
+    ${m.text&&m.text!=='확인하고 있어요…'&&!(m.actions||[]).length?`<div class="bact"><button data-bcp="${mi}">${IC.copy}<span>복사</span></button><button data-bsh="${mi}">${MI.share}<span>공유</span></button><button data-bfw="${mi}">${MI.fwd}<span>대화방에 보내기</span></button></div>`:''}
     ${(m.actions||[]).map((a,ai)=>{const [k,main,sub]=actText(a);return `<div class="actc ${a._st||''}"><span class="tag">${k}</span><b>${esc(main)}</b>${sub?`<span class="small muted">${esc(sub)}</span>`:''}
       ${a._st==='done'?`<span class="small" style="color:var(--pine)">${esc(a._msg||'반영 완료')}</span>`:a._st==='skip'?'<span class="small muted">반영 안 함</span>':
       `<span class="row" style="gap:6px"><button class="btn" data-ap="${mi}:${ai}">반영</button>${a.type==='event'||a.type==='tx'?`<button class="btn ghost" data-ae2="${mi}:${ai}">고쳐서 반영</button>`:''}<button class="chip" data-as="${mi}:${ai}">빼기</button></span>`}</div>`}).join('')}</div></div>`).join('')
@@ -107,6 +108,10 @@ function botSheet(auto){botLoad();botSave();
     catch(e){const r=localIntent(t,img);m.text=r.reply;m.actions=r.actions;m.found=r.found;m.note='AI 연결 전이라 기본 해석으로 처리했어요'}
     m.img=img;botSheet()};
   document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>send(b.dataset.s));
+  // AI 답변 복사·공유·대화방에 보내기
+  document.querySelectorAll('[data-bcp]').forEach(b=>b.onclick=()=>copyText(BOT[+b.dataset.bcp].text));
+  document.querySelectorAll('[data-bsh]').forEach(b=>b.onclick=()=>shareText(BOT[+b.dataset.bsh].text));
+  document.querySelectorAll('[data-bfw]').forEach(b=>b.onclick=()=>{const t=BOT[+b.dataset.bfw].text;forwardSheet({text:t},botSheet)});
   if($('#bnew'))$('#bnew').onclick=()=>{BOT=[];BOTFILE=null;botSave();botSheet()};
   if($('#bimgx'))$('#bimgx').onclick=()=>{BOTFILE=null;botSheet()};
   const at=s=>{const [mi,ai]=s.split(':').map(Number);return [BOT[mi],BOT[mi].actions[ai]]};

@@ -38,7 +38,7 @@ function chatMsgHtml(m){if(m.sys)return `<div class="sysmsg" id="cm-${esc(m.id)}
     :`<div class="bub ${mine?'mine':''} ${w.ai?'aib':''}" data-mid="${esc(m.id)}">${esc(m.text)}${m.orig?`<span class="orig">${esc(m.orig)}</span>`:''}${w.ai&&!m.wait?`<button class="tts" data-say="${esc(m.id)}">읽어 주기</button>`:''}</div>`;
   const rq=m.reply?`<button class="rq" data-jump="${esc(m.reply.id)}"><b>${esc(whoOf(m.reply.by).name)}</b> ${esc(m.reply.t)}</button>`:'';
   return `<div class="cm ${mine?'mine':''}" id="cm-${esc(m.id)}">${mine?'':w.ai?`<span class="av aiav" style="background:${w.color}">AI</span>`:`<button class="av" data-prof="${esc(m.by)}" style="${avBg(w)}" aria-label="${esc(w.name)} 정보">${w.photo?'':esc(w.name.slice(0,1))}</button>`}
-    <div class="cmb">${mine?'':w.ai?`<span class="cmn">${esc(w.name)}</span>`:`<button class="cmn" data-prof="${esc(m.by)}">${esc(w.name)}</button>`}${rq}${body}<span class="cmt">${rcHtml(m)}${m.edited&&!m.del?'<span class="edtag">수정됨</span>':''}${hhmm(m.ts)}</span></div></div>`}
+    <div class="cmb">${mine?'':w.ai?`<span class="cmn">${esc(w.name)}</span>`:`<button class="cmn" data-prof="${esc(m.by)}">${esc(w.name)}</button>`}${rq}${body}${rxHtml(m)}<span class="cmt">${rcHtml(m)}${m.edited&&!m.del?'<span class="edtag">수정됨</span>':''}${hhmm(m.ts)}</span></div></div>`}
 // 답장: 말풍선 메뉴에서 '답장' → 입력창 위에 원래 메시지 표시 → 보내면 인용과 함께 저장
 let CREPLY=null;
 function msgSnip(m){return m.text?m.text.replace(/\s+/g,' ').slice(0,40):m.sticker?'이모티콘':m.act?'움직이는 이모티콘':m.img?'사진':m.file?(isImg(m.file)?'사진':isVid(m.file)?'동영상':'파일'):''}
@@ -93,7 +93,10 @@ function bindTalk(){
     document.querySelectorAll('[data-fx]').forEach(b=>b.onclick=()=>{setPref('fx',b.dataset.fx);close();renderMain()})};
 }
 const TRM={};
+// 길게 눌러 메뉴를 연 뒤 손을 뗄 때 생기는 클릭이 메뉴를 바로 닫지 않게
+function eatClick(){const f=e=>{e.stopPropagation();e.preventDefault()};document.addEventListener('click',f,true);setTimeout(()=>document.removeEventListener('click',f,true),450)}
 function bindMsgs(root){bindSay(root);
+  root.querySelectorAll('[data-rx]').forEach(b=>b.onclick=e=>{e.stopPropagation();const [id,em]=b.dataset.rx.split('|');react(id,em)});
   root.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>playAct(b.dataset.play));
   root.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{const m=findMsg(b.dataset.view);if(m)viewFile(m.file||{data:m.img,type:'image/jpeg',name:'사진'})});
   root.querySelectorAll('[data-mid]').forEach(b=>b.onclick=e=>{if(e.target.closest('.tts'))return;msgMenu(b.dataset.mid)});
@@ -102,7 +105,7 @@ function bindMsgs(root){bindSay(root);
   root.querySelectorAll('[data-rc]').forEach(b=>b.onclick=e=>{e.stopPropagation();readSheet(b.dataset.rc)});
   // 길게 누르면 메뉴 (사진·파일·움직이는 이모티콘도 답장·삭제 가능)
   root.querySelectorAll('.cm[id^="cm-"]').forEach(el=>{const id=el.id.slice(3);let t=null;
-    el.addEventListener('touchstart',()=>{t=setTimeout(()=>{t=null;msgMenu(id)},550)},{passive:true});
+    el.addEventListener('touchstart',()=>{t=setTimeout(()=>{t=null;eatClick();try{navigator.vibrate&&navigator.vibrate(20)}catch(e){}msgMenu(id)},500)},{passive:true});
     ['touchend','touchmove','touchcancel'].forEach(ev=>el.addEventListener(ev,()=>{if(t){clearTimeout(t);t=null}},{passive:true}));
     el.addEventListener('contextmenu',e=>{e.preventDefault();msgMenu(id)})})}
 // 내가 보낸 메시지 고치기·지우기 (가족 대화방은 공유 데이터, 따로 만든 방은 방 메시지 문서)
@@ -118,23 +121,29 @@ function delMsg(id){const m=findMsg(id);if(!m)return;if(m.file&&m.file.data)delM
 function mineBtns(m){return m.by===ME&&!m.del?`${m.text?`<button id="medit">${MI.edit}<span>수정</span></button>`:''}<button id="mdel" class="red">${MI.del}<span>삭제</span></button>`:''}
 function bindMine(id){if($('#medit'))$('#medit').onclick=()=>editMsg(id);
   if($('#mdel'))$('#mdel').onclick=()=>{const b=$('#mdel');if(!b.dataset.sure){b.dataset.sure=1;b.querySelector('span').textContent='한 번 더';return}delMsg(id)}}
-const MI={reply:'<svg viewBox="0 0 24 24"><path d="M10 8L5 12l5 4"/><path d="M5 12h9a5 5 0 0 1 5 5v1"/></svg>',
+const MI={share:'<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
+  fwd:'<svg viewBox="0 0 24 24"><path d="M14 5l6 6-6 6"/><path d="M20 11H9a5 5 0 0 0-5 5v2"/></svg>',reply:'<svg viewBox="0 0 24 24"><path d="M10 8L5 12l5 4"/><path d="M5 12h9a5 5 0 0 1 5 5v1"/></svg>',
   edit:'<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
   del:'<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>'};
 // 말풍선을 누르면 바로 옆에 작은 메뉴
 function msgMenu(id){const m=findMsg(id);if(!m||m.wait||m.del||m.sys)return;
   const ko=m.text&&/[가-힣]/.test(m.text),to=ko?pref('chatTr','en'):'ko',r=m.text?TRM[id+to]:null;
-  const btns=`<button id="mrp">${MI.reply}<span>답장</span></button>${m.text?`<button id="mtr">${IC.trans}<span>번역</span></button><button id="mcp">${IC.copy}<span>복사</span></button><button id="mtt">${IC.spk}<span>읽기</span></button>`:''}${mineBtns(m)}`;
+  const btns=`<button id="mrp">${MI.reply}<span>답장</span></button>${m.text?`<button id="mcp">${IC.copy}<span>복사</span></button>`:''}${shareable(m)?`<button id="msh">${MI.share}<span>공유</span></button>`:''}<button id="mfw">${MI.fwd}<span>전달</span></button>${m.text?`<button id="mtr">${IC.trans}<span>번역</span></button><button id="mtt">${IC.spk}<span>읽기</span></button>`:''}${mineBtns(m)}`;
+  const mine0=((m.rx||{})[ME])||'';
+  const rxRow=`<div class="mpop-rx">${RX.map(e=>`<button data-prx="${e}" class="${mine0===e?'on':''}" aria-label="공감 ${e}">${e}</button>`).join('')}</div>`;
   const tr=r?`<div class="mpop-tr"><div class="tr-t">${esc(r.t)}</div>${r.p?`<div class="tr-p">발음 · ${esc(r.p)}</div>`:''}</div>`:'';
   const lang=ko&&m.text?`<label class="mpop-lang">번역 언어 <select id="mtl">${LANGS.map(([c,n])=>`<option value="${c}" ${c===to?'selected':''}>${n}</option>`).join('')}</select></label>`:'';
-  $('#layer').innerHTML=`<div class="mpop-dim" id="mdim"><div class="mpop" id="mpop" role="menu"><div class="mpop-b">${btns}</div>${tr}${lang}</div></div>`;BACK=null;
+  $('#layer').innerHTML=`<div class="mpop-dim" id="mdim"><div class="mpop" id="mpop" role="menu">${rxRow}<div class="mpop-b">${btns}</div>${tr}${lang}</div></div>`;BACK=null;
   $('#mdim').onclick=e=>{if(e.target.id==='mdim')close()};
   placePop(id);bindMine(id);
   $('#mrp').onclick=()=>setReply(id);
+  document.querySelectorAll('[data-prx]').forEach(b=>b.onclick=()=>{close();react(id,b.dataset.prx)});
+  if($('#msh'))$('#msh').onclick=()=>{close();shareText(shareBody(m))};
+  $('#mfw').onclick=()=>forwardSheet(m);
   if(!m.text)return;
   if($('#mtl'))$('#mtl').onchange=e=>{setPref('chatTr',e.target.value);msgMenu(id)};
   $('#mtr').onclick=async()=>{$('#mtr span').textContent='번역 중';try{TRM[id+to]=await translate(m.text,ko?'ko':'auto',to);msgMenu(id)}catch(e){$('#mtr span').textContent='번역';toast(aiErr(e).split('.')[0])}};
-  $('#mcp').onclick=()=>{try{navigator.clipboard.writeText(m.text).then(()=>{toast('복사했어요');close()},()=>toast('복사할 수 없습니다'))}catch(e){}};
+  $('#mcp').onclick=()=>{close();copyText(m.text)};
   $('#mtt').onclick=()=>speakIn(r?r.t:m.text,r?(to==='ko'?'ko-KR':lg(to)[2]):'ko-KR');
 }
 // 메뉴 위치: 말풍선 아래(공간이 없으면 위), 내 메시지는 오른쪽 맞춤
@@ -173,3 +182,25 @@ function chatSearch(){sheet(`<div class="stack"><h2>대화 검색</h2><div class
     $('#sres').innerHTML=hits.length?hits.map(m=>`<button data-sh="${esc(m.id)}"><span class="small muted">${esc(whoOf(m.by).name)} · ${new Date(m.ts).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span><br>${hl(m.text)}</button>`).join(''):'<div class="small muted">찾는 말이 없어요</div>';
     document.querySelectorAll('[data-sh]').forEach(b=>b.onclick=()=>{close();const id=b.dataset.sh;setTimeout(()=>{jumpTo(id);const el=document.getElementById('cm-'+id);if(el){el.classList.add('hit');setTimeout(()=>el.classList.remove('hit'),2000)}},150)})};
   $('#sq').oninput=()=>{clearTimeout(run.t);run.t=setTimeout(run,200)};setTimeout(()=>$('#sq').focus(),100)}
+
+// 공감: 메시지마다 한 사람 하나 (같은 걸 다시 누르면 취소)
+const RX=['❤️','👍','😂','😮','😢','🙏'];
+function rxHtml(m){const r=m.rx||{},cnt={};Object.values(r).forEach(e=>cnt[e]=(cnt[e]||0)+1);const ks=Object.keys(cnt);if(!ks.length||m.del)return '';
+  return `<div class="rxs">${ks.map(e=>`<button class="rx ${r[ME]===e?'on':''}" data-rx="${esc(m.id)}|${e}" aria-label="${e} ${cnt[e]}명">${e}${cnt[e]>1?' '+cnt[e]:''}</button>`).join('')}</div>`}
+function react(id,em){const m=findMsg(id);if(!m||m.del)return;const r={...(m.rx||{})};if(r[ME]===em)delete r[ME];else r[ME]=em;patchMsg(m,{rx:Object.keys(r).length?r:undefined})}
+// 공유: 앱(APK)은 안드로이드 공유창, 브라우저는 공유 기능 또는 복사
+const shareable=m=>!!(m.text||m.img||(m.file&&m.file.data));
+function shareBody(m){return [m.text,m.img&&/^https?:/.test(m.img)?m.img:'',m.file&&/^https?:/.test(m.file.data||'')?m.file.data:''].filter(Boolean).join('\n')}
+async function shareText(t){if(!t)return;const P=NPLUG('HanssineNative');
+  if(P&&P.share){try{await P.share({text:t});return}catch(e){}}
+  if(navigator.share){try{await navigator.share({text:t});return}catch(e){if(e&&e.name==='AbortError')return}}
+  copyText(t,'복사했어요. 보낼 앱에 붙여넣어 주세요')}
+// 전달: 가족 대화방이나 다른 방으로 그대로 보내기
+function forwardSheet(m,back){const here=back?null:(CROOM||'');const tg=[{id:'',t:'가족 대화방'},...ROOMS.map(r=>({id:r.id,t:r.title}))].filter(x=>x.id!==here);
+  if(!tg.length){close();toast('보낼 다른 대화방이 없어요');return}
+  sheet(`<div class="stack"><h2>전달하기</h2><div class="card small muted" style="max-height:30vh;overflow:auto;white-space:pre-wrap">${esc(m.text||msgSnip(m))}</div><div class="glist2">${tg.map(x=>`<button data-fwd="${esc(x.id)}">${esc(x.t)}</button>`).join('')}</div></div>`,false,back||null);
+  document.querySelectorAll('[data-fwd]').forEach(b=>b.onclick=()=>{const o={id:uid(),by:ME,ts:Date.now(),fwd:true};['text','img','file','sticker','act'].forEach(k=>{if(m[k])o[k]=m[k]});
+    const rid=b.dataset.fwd;close();if(back)back();
+    if(!rid){S.chat=S.chat||[];S.chat.push(o);save()}
+    else{const j=JSON.stringify(o);const r=roomsRef().doc(rid);r.collection('msgs').doc(o.id).set({j,ts:o.ts,by:ME}).catch(()=>toast('보내지 못했어요'));r.update({last:{t:msgSnip(o),by:ME,ts:o.ts}}).catch(()=>{})}
+    toast(`'${(tg.find(x=>x.id===rid)||{}).t}'에 전달했어요`)})}

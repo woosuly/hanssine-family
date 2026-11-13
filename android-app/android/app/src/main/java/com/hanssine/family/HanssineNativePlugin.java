@@ -53,6 +53,19 @@ public class HanssineNativePlugin extends Plugin {
 
     /** 앱이 처음 열릴 때 알림으로 열렸는지 확인 (한 번만) */
     @PluginMethod
+    public void share(PluginCall call) {
+        try {
+            Intent i = new Intent(Intent.ACTION_SEND);
+            i.setType("text/plain");
+            i.putExtra(Intent.EXTRA_TEXT, call.getString("text", ""));
+            Intent c = Intent.createChooser(i, "공유");
+            c.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(c);
+            call.resolve();
+        } catch (Exception e) { call.reject(e.getMessage()); }
+    }
+
+    @PluginMethod
     public void setBar(PluginCall call) {
         try {
             int c = android.graphics.Color.parseColor(call.getString("color", "#2E6A4E"));

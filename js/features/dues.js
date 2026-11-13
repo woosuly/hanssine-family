@@ -36,7 +36,7 @@ function duesView(){
 function bindDues(){
   const t=today0(),ym=t.getFullYear()+'-'+pad(t.getMonth()+1);
   segBind('#dsub',v=>{DSUB=v;renderMain()});
-  document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{const v=b.dataset.copy;try{navigator.clipboard.writeText(v).then(()=>toast('계좌번호를 복사했어요'),()=>toast(v))}catch(e){toast(v)}});
+  document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>copyText(b.dataset.copy,'계좌번호를 복사했어요'));
   document.querySelectorAll('[data-accf]').forEach(b=>b.onclick=()=>{const k=b.dataset.accf;if(k&&k===ACCF&&isTreas())return accEdit(accs().find(a=>a.id===k));ACCF=k;renderMain()});
   if($('#accadd'))$('#accadd').onclick=()=>accEdit(null);
   document.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{const h=b.dataset.pay;S.dues.paid[ym]=S.dues.paid[ym]||{};const on=!S.dues.paid[ym][h];S.dues.paid[ym][h]=on;

@@ -93,3 +93,8 @@ const ICON={home:'<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/><path d
   talk:'<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>',
   trans:'<svg viewBox="0 0 24 24"><path d="M3 5h9M7.5 3v2M5.5 5c0 3.5 2.5 6.5 5.5 8M9.5 5c-.5 3.5-2.8 6.6-6 8.2"/><path d="M12.5 21l4-9 4 9M14 18h5"/></svg>',
   set:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>'};
+
+// 복사: 클립보드가 막힌 환경(앱 안 웹 화면)에서는 예전 방식으로
+function copyText(t,msg){const ok=()=>toast(msg||'복사했어요');
+  const old=()=>{try{const a=document.createElement('textarea');a.value=t;a.setAttribute('readonly','');a.style.cssText='position:fixed;top:0;left:0;opacity:0';document.body.appendChild(a);a.select();a.setSelectionRange(0,t.length);const r=document.execCommand('copy');a.remove();r?ok():toast('복사할 수 없습니다')}catch(e){toast('복사할 수 없습니다')}};
+  try{if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).then(ok,old);else old()}catch(e){old()}}

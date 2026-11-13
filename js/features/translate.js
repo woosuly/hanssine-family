@@ -96,7 +96,7 @@ function transSheet(){
     $('#tmenu').onclick=()=>{TR.menuNext=true;$('#timg').click()};
     bindMenu();
     if($('#tspk'))$('#tspk').onclick=()=>speakIn(TR.last.t,TR.last.lang==='ko'?'ko-KR':lg(TR.last.lang)[2]);
-    if($('#tcopy'))$('#tcopy').onclick=()=>{try{navigator.clipboard.writeText(TR.last.t).then(()=>toast('복사했어요'),()=>toast('복사할 수 없습니다'))}catch(e){}}}
+    if($('#tcopy'))$('#tcopy').onclick=()=>copyText(TR.last.t)}
   if(TR.mode==='face'){
     const run=async(side)=>{const isKo=side==='ko',b=$(isKo?'#fko':'#fot');if(REC){stopListen();return}
       listen(async(t,fin)=>{if(isKo)TR.face.ko=t;else TR.face.ot=t;if(!fin)return;
