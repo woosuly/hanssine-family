@@ -128,7 +128,7 @@ function gameFreecell(){
     const safe=c=>c.r<=2||(red(c)?Math.min(found[0],found[3]):Math.min(found[1],found[2]))>=c.r-1;
     for(const col of cols){const c=col.at(-1);if(c&&toFound(c)&&safe(c)){found[c.s]=c.r;col.pop();mv=true}}
     for(let i=0;i<4;i++){const c=free[i];if(c&&toFound(c)&&safe(c)){found[c.s]=c.r;free[i]=null;mv=true}}}};
-  const cardHtml=(c,attr,cls='')=>`<div class="fcard ${red(c)?'red':''} ${cls}" ${attr}><b>${RK[c.r]}</b><i>${SU[c.s]}</i></div>`;
+  const cardHtml=(c,attr,cls='')=>`<div class="pcard ${red(c)?'red':''} ${cls}" ${attr}><b>${RK[c.r]}</b><i>${SU[c.s]}</i></div>`;
   const draw=()=>{
     const isSel=(k,i,j)=>sel&&sel.k===k&&sel.i===i&&(k!=='c'||j>=cols[i].length-sel.n);
     sheet(`<div class="bhead"><span class="turn">프리셀</span><span class="num" style="font-size:.85em">이동 ${moves}</span></div>

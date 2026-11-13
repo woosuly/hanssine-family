@@ -48,8 +48,8 @@ function homeView(){
     </div>
     <div class="card" style="padding-block:8px"><div class="row between"><b>다가오는 일정</b><button class="link" data-go="cal">달력 ›</button></div>
       ${up.map(e=>`<div class="mini"><span>${esc(e.title)}</span><b class="num" style="color:var(--sun)">${dday(e._n)}</b></div>`).join('')||'<div class="small muted">없음</div>'}</div>
-    <div><div class="row between" style="margin-bottom:6px"><b>새 사진</b><button class="link" data-go="album">앨범 ›</button></div>
-      <div class="thumbs">${ph.map(p=>`<button data-ph="${p.id}"><img src="${p.img}" alt="${esc(p.caption)}"></button>`).join('')}</div></div>
+    <div class="card" style="padding-block:8px"><div class="row between" style="margin-bottom:${ph.length?6:0}px"><b>새 사진</b><button class="link" data-go="album">앨범 ›</button></div>
+      ${ph.length?`<div class="thumbs">${ph.map(p=>`<button data-ph="${p.id}"><img src="${p.img}" alt="${esc(p.caption)}"></button>`).join('')}</div>`:'<div class="small muted">아직 올린 사진이 없어요</div>'}</div>
     ${isDaughter()?`<button class="card wxcard" data-go="dues"><span><b>${['monthly','tiered'].includes(S.dues.mode)?`${t.getMonth()+1}월 회비`:'회비'}</b> <span class="small muted num">${!S.dues.mode?'아직 정하지 않음':`${S.dues.mode==='event'?'':`${cnt}/3 가구 납부 · `}잔액 ${won(balance())}`}</span></span><span class="link">›</span></button>`:''}
   </div>`;
 }
