@@ -13,6 +13,7 @@ actions 항목:
 - 앨범 사진 {"type":"photo","caption":"","tag":"손주|풍경|모임"} (첨부가 일반 사진일 때)
 - 투표 {"type":"poll","q":"","opts":["",""]}
 - 모임 정산 {"type":"settle","title":"","total":정수}
+일정·회비는 이미 정해진 약속이나 이미 쓰거나 받은 돈을 기록해 달라는 말일 때만 만든다. 알아봐 달라·추천·비교·어때·좋을지·계획 중 같은 질문이나 상의는 금액이나 날짜가 들어 있어도 actions를 []로 두고 reply에 답을 충분히 쓴다(여러 줄 가능).
 반영할 작업이 없으면 actions는 []로 두고 reply로 답한다. 영수증은 합계 금액과 상호를 읽어 tx로 만든다. 날짜는 오늘 기준으로 계산한다.
 계좌 id: ${accs().map(a=>a.id+'='+a.name).join(', ')}
 ${aiContext()}`}
@@ -26,7 +27,11 @@ function parseDateKo(t){const now=today0();let m;const fix=(mo,d)=>{let x=new Da
   if(m=t.match(/(\d{1,2})\s*일/))return fix(now.getMonth()+1,+m[1]);return null}
 function parseAmt(t){let m;if(m=t.match(/(\d+)\s*만\s*(?:(\d+)\s*천)?/))return +m[1]*10000+(m[2]?+m[2]*1000:0);
   if(m=t.match(/(\d+)\s*천\s*원/))return +m[1]*1000;if(m=t.match(/(\d[\d,]{2,})\s*원?/))return +m[1].replace(/,/g,'');return 0}
+// 묻거나 상의하는 말: 금액·날짜가 있어도 기록 카드로 만들지 않음
+const askLike=t=>/(\?|알아봐|알아 봐|추천|좋을지|좋을까|어때|어떨까|비교|하려는데|하려고 하는데|계획|숙소|맛집|가볼|가 볼|코스|뭐가 좋)/.test(t)||t.length>=40;
 function localIntent(t,img){const acts=[];t=t||'';
+  if(t&&!img&&askLike(t)&&!/(잡아|등록|추가|올려|기록|썼|냈|결제)/.test(t)){const found=localSearch(t);
+    return {reply:found.length?'앱에서 찾은 내용입니다. 추천이나 알아보는 질문은 AI가 연결되면 답할 수 있어요.':'추천이나 알아보는 질문은 AI가 연결되면 답할 수 있어요. 설정 > AI 연결에서 키를 등록해 주세요.',actions:[],found}}
   if(/(운동|걷기|산책|스트레칭|체조)/.test(t)&&/(분석|얼마|비교|통계|어땠|정리|했어|했나|많이)/.test(t))return {reply:exAnalysis(t),actions:[]};
   if(t&&/(\?|언제|어디|뭐였|뭐야|찾아|검색|였지|알려)/.test(t)&&!/(잡아|등록|추가|만들|올려|기록|썼|냈)/.test(t)){const found=localSearch(t);
     return {reply:found.length?'앱에서 찾은 내용입니다.':'앱에서 찾지 못했어요. AI가 연결되면 더 자세히 답할 수 있어요.',actions:[],found}}

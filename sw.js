@@ -1,5 +1,5 @@
 /* 서비스 워커: 화면 파일은 네트워크 우선(업데이트 즉시 반영), 끊기면 저장본 사용 */
-const CACHE='hanssine-v28';
+const CACHE='hanssine-v29';
 const FILES=["./", "index.html", "manifest.json", "css/tokens.css", "css/app.css", "js/core/util.js", "js/core/sample-art.js", "js/core/firebase-config.js", "js/core/data.js", "js/core/sync.js", "js/core/media.js", "js/core/push.js", "js/core/ui.js", "js/core/voice.js", "js/core/ai.js", "js/core/weather.js", "js/features/stickers.js", "js/features/chat.js", "js/features/rooms.js", "js/features/unread.js", "js/features/calendar.js", "js/features/anniv.js", "js/features/dues.js", "js/features/bot.js", "js/features/translate.js", "js/features/exercise.js", "js/features/games.js", "js/features/games2.js", "js/features/album.js", "js/features/senior.js", "js/features/home.js", "js/features/settings.js", "js/features/auth.js", "js/main.js", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});

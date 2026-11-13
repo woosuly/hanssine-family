@@ -69,11 +69,12 @@ const pmItem=(id,ic,l)=>`<button class="pmi" id="${id}"><span>${IC[ic]}</span>${
 function composer(p,o){return `<div class="plusmenu" id="${p}pm" hidden>${o.emoji?pmItem(p+'emo','smile','이모티콘'):''}${pmItem(p+'imgb','img','사진·동영상')}${pmItem(p+'camb','cam','카메라')}${pmItem(p+'fileb','clip','파일')}${o.trans?pmItem(p+'trb','trans','번역해서 보내기'):''}</div>
   <div class="cbar">${ib(p+'plus','plus','더보기')}<textarea id="${p}q" rows="1" placeholder="${o.ph}">${esc(o.draft||'')}</textarea>${ib(p+'mic','mic','음성 입력')}${ib(p+'send','send','보내기','primary')}</div>${fileInputs(p)}`}
 function bindComposer(p,o){const q=$('#'+p+'q');
-  const grow=()=>{q.style.height='auto';q.style.height=Math.min(120,q.scrollHeight)+'px'};grow();
+  const grow=()=>{q.style.height='auto';q.style.height=Math.min(140,q.scrollHeight)+'px'};grow();
   const pm=$('#'+p+'pm');$('#'+p+'plus').onclick=()=>{pm.hidden=!pm.hidden;$('#'+p+'plus').classList.toggle('open',!pm.hidden);if(o.onPlus)o.onPlus(!pm.hidden)};
   q.addEventListener('input',()=>{grow();if(o.onInput)o.onInput(q.value)});
   const send=()=>{const t=q.value.trim();if(!t&&!o.allowEmpty)return;q.value='';grow();pm.hidden=true;o.onSend(t)};
-  $('#'+p+'send').onclick=send;q.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send()}};
+  // 휴대폰: 엔터는 줄바꿈, 보내기는 버튼 / PC: 엔터 보내기, Shift+엔터 줄바꿈
+  $('#'+p+'send').onclick=send;q.onkeydown=e=>{if(matchMedia('(pointer:coarse)').matches)return;if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send()}};
   $('#'+p+'imgb').onclick=()=>{pm.hidden=true;$('#'+p+'img').click()};$('#'+p+'camb').onclick=()=>{pm.hidden=true;$('#'+p+'cam').click()};$('#'+p+'fileb').onclick=()=>{pm.hidden=true;$('#'+p+'file').click()};
   bindFiles(p,o.onFile);
   if($('#'+p+'emo'))$('#'+p+'emo').onclick=()=>{pm.hidden=true;o.onEmoji()};
