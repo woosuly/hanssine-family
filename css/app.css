@@ -100,7 +100,7 @@ h2{font-size:17px;margin:0;text-wrap:balance}
 
 /* senior: 스크롤 없는 한 화면. 크기는 em 단위 → 글씨 크기 설정(--k)에 비례 */
 html,body{height:100%}
-body.senior{font-size:calc(17px * var(--k,1));overflow:hidden}
+body.senior{font-size:calc(15.5px * var(--k,1));overflow:hidden}
 .sr{height:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:.45em;
   padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));padding-block:.5em .6em}
 .sr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.5em}
