@@ -857,3 +857,21 @@ body.senior.kbopen #tq{min-height:2.2em}
 select.rccat{appearance:auto;background:var(--surface);padding:2px 4px;font-size:12px;max-width:6.5em}
 select.rccat.need{color:var(--sun);border-color:var(--sun)}
 .rcin{flex:1;min-width:0;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:14px}
+
+/* 사진 크게 보기 */
+.pv{position:fixed;inset:0;z-index:40;background:#111;color:#fff;display:grid;grid-template-rows:auto 1fr auto;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.pvtop{display:flex;align-items:center;justify-content:space-between;padding:6px 8px}
+.pvb{width:44px;height:44px;border:0;background:none;color:#fff;display:grid;place-items:center;border-radius:50%}
+.pvb svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2}
+.pvb:active{background:rgba(255,255,255,.12)}
+.pvstage{position:relative;overflow:hidden;display:grid;place-items:center;touch-action:none;min-height:0}
+.pvstage img{max-width:100%;max-height:100%;object-fit:contain;transition:transform .05s linear;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.pvside{position:absolute;right:6px;bottom:120px;display:flex;flex-direction:column;align-items:center;gap:2px;z-index:2}
+.pvside .big span{font-size:26px;line-height:1}
+.pvside .big svg{width:28px;height:28px}
+.pvside .pvb.on span{color:#ff5a6a}
+.pvn{border:0;background:none;color:#fff;font-size:13px;min-height:18px;margin-bottom:8px;font-variant-numeric:tabular-nums}
+.pvbot{display:flex;gap:10px;align-items:flex-start;padding:10px 64px 14px 14px;background:linear-gradient(transparent,rgba(0,0,0,.6))}
+.pvbot .av{flex:none}
+.pvcap{margin-top:2px;font-size:14px;opacity:.95}
+.pvlast{border:0;background:none;color:#fff;text-align:left;padding:4px 0 0;font-size:13px;opacity:.9}
