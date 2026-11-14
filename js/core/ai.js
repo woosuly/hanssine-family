@@ -37,6 +37,14 @@ function aiContext(pub){const vis=x=>pub?x.scope==='all':canSee(x);
   const hs=Object.values(holidays(t.getFullYear())).length?Object.entries({...holidays(t.getFullYear()),...holidays(t.getFullYear()+1)}).filter(([k])=>k>=ymd(t)).slice(0,6):[];
   L.push('[다가오는 공휴일]');hs.forEach(([k,v])=>L.push(`- ${k} ${v}`));
   if(!pub&&isDaughter()){L.push(`[회비] 전체 잔액 ${won(balance())} (${accs().map(a=>a.name+' '+won(balance(a.id))).join(', ')}), 방식 ${(MODES.find(x=>x[0]===S.dues.mode)||[,'미정'])[1]}, 총무 ${S.dues.treasurer?HOUSES[S.dues.treasurer]:'미정'}`)}
+  // 회비 내역·모임 정산(영수증 포함): 딸들만. 다른 사람이 물으면 볼 수 없다고 답하게
+  if(!pub&&isDaughter()){L.push('[회비 내역, 최근 40건] (금액: +입금 -지출)');S.dues.tx.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,40).forEach(x=>L.push(`- ${x.date} ${x.desc} ${x.amt>0?'+':''}${won(x.amt)}`));
+    L.push('[모임 정산, 최근 20건]');(S.settles||[]).slice(-20).reverse().forEach(st=>{const rest=st.total-(st.fromDues||0),per=Math.ceil(rest/(st.houses||[1]).length/10)*10;
+      L.push(`- ${st.date} ${st.title}: 총 ${won(st.total)}${st.fromDues?`, 회비에서 ${won(st.fromDues)}`:''}, ${(st.houses||[]).map(h=>HOUSES[h]).join('·')} 가구당 ${won(per)}`);
+      (st.receipts||[]).forEach(r=>L.push(`  · 영수증 ${r.date||st.date} ${r.store||''} [${r.cat}] ${won(r.total)}${(r.items||[]).length?' ('+r.items.map(i=>i.name+' '+won(i.amount||0)).join(', ')+')':''}`))})}
+  else if(!pub)L.push('[회비·모임 정산] 이 사람에게는 공개되지 않음. 회비·정산·영수증 금액을 물으면 "회비와 정산은 딸들만 볼 수 있어요"라고 답한다.');
+  L.push('[지난 일정, 최근 60일]');(S.events||[]).filter(vis).filter(e=>e.date<ymd(t)&&e.date>=ymd(addDays(t,-60))&&(!e.repeat||e.repeat==='none')).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20).forEach(e=>L.push(`- ${e.date} ${e.title}${e.place?' · '+e.place:''}`));
+  L.push('[최근 사진, 30장]');(S.photos||[]).filter(vis).slice(-30).reverse().forEach(p=>L.push(`- ${p.date||''} ${(mem(p.by)||{}).name||''}: ${p.caption||'(설명 없음)'}${p.tag?' · 폴더 '+p.tag:''}`));
   if(me().role!=='grand'||!pub){L.push('[부모님 운동 기록(분), 최근 62일]');S.members.filter(x=>x.role==='parent').forEach(p=>{const a=[];for(let i=61;i>=0;i--){const k=ymd(addDays(t,-i));const x=(S.log[k]||{})[p.id]||{};if(x.ev&&x.ev.length)a.push(k.slice(5)+' '+x.ev.map(e=>exName(e.k)+e.m).join('+'))}L.push(`- ${p.name}: ${a.join(', ')||'기록 없음'}`)})}
   L.push(`[날씨 예보, 예시 데이터] ${S.weather.loc}: `+S.weather.week.map((w,i)=>`${md(addDays(t,i))} ${w[2]} ${w[1]}~${w[0]}° 강수 ${w[3]}%`).join(' / '));
   return L.join('\n');
