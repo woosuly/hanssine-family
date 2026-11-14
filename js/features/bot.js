@@ -13,6 +13,9 @@ actions 항목:
 - 앨범 사진 {"type":"photo","caption":"","tag":"손주|풍경|모임"} (첨부가 일반 사진일 때)
 - 투표 {"type":"poll","q":"","opts":["",""]}
 - 모임 정산 {"type":"settle","title":"","total":정수}
+- 알림 예약 {"type":"remind","at":"YYYY-MM-DD HH:MM","text":"알릴 내용(짧게)","to":["받을 구성원 id"]} ('○시에 알려줘', '내일 아침에 ~하라고 알려줘' 같은 말. 나에게만이면 to는 [], 시각이 없으면 오전 9시)
+구성원 id: ${S.members.map(m=>m.id+'='+m.name).join(', ')}
+지금 시각: ${ymd(today0())} ${String(new Date().getHours()).padStart(2,'0')}:${String(new Date().getMinutes()).padStart(2,'0')}
 일정·회비는 이미 정해진 약속이나 이미 쓰거나 받은 돈을 기록해 달라는 말일 때만 만든다. 알아봐 달라·추천·비교·어때·좋을지·계획 중 같은 질문이나 상의는 금액이나 날짜가 들어 있어도 actions를 []로 두고 reply에 답을 충분히 쓴다(여러 줄 가능).
 반영할 작업이 없으면 actions는 []로 두고 reply로 답한다.
 ${ANSWER_RULE} 영수증은 합계 금액과 상호를 읽어 tx로 만든다. 날짜는 오늘 기준으로 계산한다.
@@ -56,6 +59,7 @@ function actText(a){
   if(a.type==='photo')return ['앨범',a.caption,a.tag];
   if(a.type==='poll')return ['투표',a.q,(a.opts||[]).join(' / ')];
   if(a.type==='settle')return ['정산',`${a.title} · 총 ${won(a.total)}`,'세 가구 나누기'];
+  if(a.type==='remind')return ['알림',`${remWhen(remAt(a.at))} · ${a.text}`,remTo(a.to)];
   return ['기타',JSON.stringify(a),'']}
 function applyAct(a,img){const r=me().role,isT=isTreas();
   if((a.type==='tx'||a.type==='settle')&&!isDaughter())return '회비는 딸들만 반영할 수 있어요';
@@ -63,6 +67,7 @@ function applyAct(a,img){const r=me().role,isT=isTreas();
     if(a.end&&a.end>a.date)e.end=a.end;if(e.repeat==='lunar'){const l=S2L(parse(e.date));if(l){e.lm=l.m;e.ld=l.d}else e.repeat='none'}if(kind==='family'||kind==='trip')e.rsvp={};S.events.push(e);return '일정에 등록했어요'}
   if(a.type==='tx'){if(!isT){S.chat=S.chat||[];S.chat.push({id:uid(),by:ME,ts:Date.now(),text:`[회비 기록 요청] ${a.date} ${a.desc} ${won(a.amount)} — 총무님 확인 부탁드려요`});return `총무(${S.dues.treasurer?HOUSES[S.dues.treasurer]:'미정'})에게 기록 요청을 보냈어요`}
     S.dues.tx.push({id:uid(),date:a.date,desc:a.desc,amt:a.amount,acc:accs().some(x=>x.id===a.acc)?a.acc:(accs()[0]||{}).id});return '회비 내역에 기록했어요'}
+  if(a.type==='remind')return remAdd(a);
   if(a.type==='notice'){S.notices.push({id:uid(),by:ME,text:a.text,date:ymd(today0()),scope:'all',sms:false});return '공지로 올렸어요'}
   if(a.type==='photo'){if(!img)return '사진이 없어요';const fd=(S.folders.find(f=>f.name===a.tag)||{}).id||'';const p={id:uid(),by:ME,folder:fd,tag:fname(fd),caption:a.caption||'새 사진',date:ymd(today0()),scope:'all',img,reacts:{}};
     upMedia(img,'photo.jpg').then(u=>{p.img=u;S.photos.push(p);save();toast('앨범에 올렸어요');if(TAB==='album')renderMain()}).catch(upFail);return '앨범에 올리는 중이에요'}
@@ -100,6 +105,7 @@ function botSheet(auto){botLoad();botSave();
   const box=$('#blog');box.scrollTop=box.scrollHeight;
   const cmp=bindComposer('b',{allowEmpty:true,onSend:t=>send(t),onFile:f=>{BOTFILE=f;botSheet()}});const q=cmp.q;
   const send=async txt=>{const t=(txt??q.value).trim();const f=BOTFILE;if(!t&&!f)return;q.value='';BOTFILE=null;
+    if(t&&!f&&await playAsk(t)){BOT.push({role:'user',text:t},{role:'ai',text:'유튜브를 열었어요.'});botSave();botSheet();return}
     const img=f&&isImg(f)?f.data:null;
     BOT.push({role:'user',text:t,img,fname:f&&!img?f.name:''});const m={role:'ai',text:'확인하고 있어요…',actions:[]};BOT.push(m);botSheet();
     const hist=[...BOT.filter(x=>x.role==='user'||(x.role==='ai'&&x!==m)).slice(-6).map(x=>({role:x.role==='user'?'user':'ai',text:(x.text||'')+(x.fname?` (첨부 파일: ${x.fname})`:'')||(x.img?'(사진 첨부)':'')}))];
@@ -123,3 +129,31 @@ function botSheet(auto){botLoad();botSave();
     else txForm({date:a.date,desc:a.desc,amount:a.amount,acc:a.acc},done,botSheet)});
   if(typeof auto==='string')send(auto);
 }
+
+// 알림 예약: families/hanssine/rems/{id} {at, text, to, by} — 서버가 5분마다 확인해서 보냄
+const remAt=s=>{const m=String(s||'').match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})/);return m?new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5]).getTime():NaN};
+function remWhen(t){if(!t||isNaN(t))return '시각 미정';const d=new Date(t),dd=Math.round((new Date(d).setHours(0,0,0,0)-today0())/864e5);
+  const day=dd===0?'오늘':dd===1?'내일':dd===2?'모레':`${d.getMonth()+1}월 ${d.getDate()}일`,h=d.getHours(),mi=d.getMinutes();
+  return `${day} ${h<12?'오전':'오후'} ${h%12||12}시${mi?' '+mi+'분':''}`}
+const remTo=to=>{const l=(to||[]).filter(id=>id!==ME&&mem(id));return l.length?l.map(id=>mem(id).name).join(', ')+'에게':'나에게'};
+function remAdd(a){const at=remAt(a.at);if(isNaN(at))return '알림 시각을 알아듣지 못했어요';if(at<Date.now()-60e3)return '이미 지난 시각이에요';
+  if(LOCAL||!SYNC.live)return '서버에 연결된 앱에서만 알림을 예약할 수 있어요';
+  const to=[...new Set((a.to||[]).filter(id=>mem(id)))];
+  famRef().collection('rems').add({at,text:String(a.text||'알림').slice(0,120),to:to.length?to:[ME],by:ME,ts:Date.now()}).catch(()=>toast('알림을 예약하지 못했어요'));
+  return `${remWhen(at)}에 ${remTo(to)} 알려 드릴게요`}
+// 설정: 내가 예약한 알림 목록·취소
+async function remListLoad(){const box=$('#remlist');if(!box)return;if(LOCAL||!SYNC.live){box.innerHTML='<div class="small muted">서버에 연결된 앱에서 볼 수 있어요</div>';return}
+  try{const qs=await famRef().collection('rems').where('by','==',ME).get();const l=qs.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.at-b.at);
+    box.innerHTML=l.length?l.map(r=>`<div class="row between" style="gap:8px"><span>${esc(remWhen(r.at))} · ${esc(r.text)} <span class="small muted">${esc(remTo(r.to))}</span></span><button class="chip" data-rmx="${r.id}">취소</button></div>`).join(''):'<div class="small muted">예약한 알림이 없어요. AI 비서에게 "내일 아침 9시에 ~ 알려줘"라고 말하면 됩니다.</div>';
+    box.querySelectorAll('[data-rmx]').forEach(b=>b.onclick=async()=>{await famRef().collection('rems').doc(b.dataset.rmx).delete().catch(()=>{});toast('알림을 취소했어요');remListLoad()})}
+  catch(e){box.innerHTML='<div class="small muted">불러오지 못했어요</div>'}}
+// 부모님 AI 대화에서 '알려줘' → 큰 확인 창
+const REMRE=/(알려\s*줘|알려\s*주|알람|깨워\s*줘|잊지\s*않게)/;
+async function srRemind(q){const sys=`지금 시각: ${ymd(today0())} ${String(new Date().getHours()).padStart(2,'0')}:${String(new Date().getMinutes()).padStart(2,'0')}. 사용자의 말에서 알림 시각과 내용을 뽑아 JSON만 출력한다: {"at":"YYYY-MM-DD HH:MM","text":"알릴 내용(짧게)"}. 시각이 없으면 오전 9시. 알림 요청이 아니면 {"at":""}.`;
+  const raw=await callAI(sys,[{role:'user',text:q}]);const j=JSON.parse((raw.match(/\{[\s\S]*\}/)||['{}'])[0]);if(!j.at)return false;
+  const at=remAt(j.at);if(isNaN(at))return false;
+  sheet(`<div class="result"><div class="big">${esc(remWhen(at))}에<br>"${esc(j.text)}"</div><div class="fact">이렇게 알려 드릴까요?</div>
+    <div class="actions"><button class="btn ghost" id="rno">아니요</button><button class="btn" id="ryes">네</button></div></div>`,true,null);
+  $('#rno').onclick=()=>{close();renderSenior()};
+  $('#ryes').onclick=()=>{const m=remAdd({at:j.at,text:j.text,to:[]});close();toast(m);speak(m);renderSenior()};
+  return true}

@@ -52,6 +52,21 @@ public class HanssineNativePlugin extends Plugin {
     }
 
     /** 앱이 처음 열릴 때 알림으로 열렸는지 확인 (한 번만) */
+    /** 다른 앱으로 열기 (유튜브 등). pkg가 없거나 설치 안 됐으면 기본 앱으로 */
+    @PluginMethod
+    public void openUrl(PluginCall call) {
+        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(call.getString("url", "")));
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        String pkg = call.getString("pkg", "");
+        if (pkg != null && !pkg.isEmpty()) i.setPackage(pkg);
+        try { getContext().startActivity(i); }
+        catch (Exception e) {
+            i.setPackage(null);
+            try { getContext().startActivity(i); } catch (Exception e2) { call.reject(String.valueOf(e2.getMessage())); return; }
+        }
+        call.resolve();
+    }
+
     @PluginMethod
     public void share(PluginCall call) {
         try {

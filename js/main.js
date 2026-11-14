@@ -6,3 +6,15 @@ function devBar(){if(!DEV)return '';return `<div class="devbar"><span>개발</sp
 function bindDev(){const d=$('#devsel');if(!d)return;d.onchange=()=>{ME=d.value;closeRoom();CROOM=null;roomsListen();try{localStorage.setItem(KEY+'-device',ME)}catch(e){};close();stopFx();stopListen();TAB='home';SR_TAB='home';VI=0;CHAT=[];render()}}
 function render(){ensureFolders();if(!ME||!mem(ME))renderWho();else if(me().role==='parent')renderSenior();else renderMain();bindDev()}
 boot();
+
+// 새 버전 빨리 반영: 앱으로 돌아올 때(1분 간격) 새 배포가 있으면 바로 다시 불러옴
+// 쓰던 글이 있거나 창을 열어 둔 중이면 다음 기회로 미룸
+const VER=(()=>{let v='';fetch('sw.js',{cache:'no-store'}).then(r=>r.text()).then(t=>{v=(t.match(/CACHE='([^']+)'/)||[])[1]||''}).catch(()=>{});return ()=>v})();
+let VER_AT=Date.now();
+async function checkNewVersion(){if(LOCAL||!VER()||Date.now()-VER_AT<60e3)return;VER_AT=Date.now();
+  try{const t=await (await fetch('sw.js',{cache:'no-store'})).text(),nv=(t.match(/CACHE='([^']+)'/)||[])[1];if(!nv||nv===VER())return;
+    const typing=[...document.querySelectorAll('textarea,input[type=text],input:not([type])')].some(e=>e.value&&e.value.trim());
+    if(typing||busy()||REC)return;
+    try{const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update()}catch(e){}
+    location.reload()}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkNewVersion()});

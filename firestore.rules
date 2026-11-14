@@ -22,6 +22,10 @@ service cloud.firestore {
     match /families/hanssine/phr/{id} {
       allow read, write: if member();
     }
+    // 예약 알림: 가족 누구나 만들고 지움 (서버가 시각이 되면 보내고 지움)
+    match /families/hanssine/rems/{id} {
+      allow read, write: if member();
+    }
     // 놀이 대결(빙고): 가족 누구나
     match /families/hanssine/games/{id} {
       allow read, write: if member();

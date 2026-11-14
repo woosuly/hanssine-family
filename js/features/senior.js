@@ -134,6 +134,8 @@ function bindSrTalk(){
   document.querySelectorAll('[data-tts]').forEach(b=>b.onclick=()=>speak(CHAT[+b.dataset.tts].text));
   const send=async()=>{const q=$('#tq').value.trim();if(!q){toast('먼저 쓰거나 말씀해 주세요');return}
     if(SCHAT!=='ai'){postChat(q).then(()=>{if(SR_TAB==='talk')renderSenior()});renderSenior();return}
+    if(REMRE.test(q)){try{if(await srRemind(q)){$('#tq').value='';return}}catch(e){}}
+    if(await playAsk(q)){$('#tq').value='';CHAT.push({role:'user',text:q},{role:'ai',text:'유튜브를 열었어요. 앱으로 돌아오시려면 뒤로 가기를 누르세요.'});srAiSave();renderSenior();return}
     const hist=[...CHAT.filter(x=>x.role==='user'||(x.role==='ai'&&!x.wait)).slice(-6),{role:'user',text:q}];
     CHAT.push({role:'user',text:q},{role:'ai',text:'생각하고 있어요…',wait:true});renderSenior();
     try{const a=await callAI(aiSystem(),hist);CHAT[CHAT.length-1]={role:'ai',text:a};srAiSave();if(SR_TAB==='talk')renderSenior();speak(a)}
