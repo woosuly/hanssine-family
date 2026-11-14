@@ -30,6 +30,7 @@ function bingoOnline(gid){if(GUNSUB){GUNSUB();GUNSUB=null}
     if(!GBOARD[gid])GBOARD[gid]=[...Array(N)].map((_,i)=>i+1).sort(()=>Math.random()-.5);
     const mine=GBOARD[gid],called=new Set(d.called||[]);
     const R=[...Array(n).keys()],mk=i=>called.has(mine[i]);
+    const whoCalled=x=>{const i=(d.called||[]).indexOf(x);return i<0?null:(i%2===0?'a':'b')};
     let ln=0;R.forEach(r=>{if(R.every(k=>mk(r*n+k)))ln++});R.forEach(k=>{if(R.every(r=>mk(r*n+k)))ln++});
     if(R.every(i=>mk(i*n+i)))ln++;if(R.every(i=>mk(i*n+(n-1-i))))ln++;
     if(d.status==='invite'){
@@ -51,7 +52,7 @@ function bingoOnline(gid){if(GUNSUB){GUNSUB();GUNSUB=null}
     sheet(`<div class="bhead"><span class="turn">${over?'끝':myTurn?'내 차례':esc(opp.name)+' 차례'}</span>
         <span class="num" style="font-size:.85em">나 <b>${ln}</b>줄 · ${esc(opp.name)} <b>${(d.lines||{})[other]||0}</b>줄 · 목표 ${d.goal}줄</span></div>
       <p class="muted" style="font-size:.85em;margin:0 0 .4em">${lastN?`${lastBy===`내가`?'내가':esc(lastBy)+'님이'} ${lastN}을(를) 불렀어요. `:''}${over?'':myTurn?'부를 숫자를 누르세요':esc(opp.name)+'님 폰에서 고르는 중…'}</p>
-      <div class="bingo" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${mine.map(x=>`<button data-b="${x}" class="${called.has(x)?'mk':''}" style="font-size:${n>4?1.15:1.5}em" ${called.has(x)||!myTurn?'disabled':''}>${x}</button>`).join('')}</div>
+      <div class="bingo" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${mine.map(x=>`<button data-b="${x}" class="${called.has(x)?'mk '+(whoCalled(x)===role?'bme':'bop'):''} ${x===lastN?'last':''}" style="font-size:${n>4?1.15:1.5}em" ${called.has(x)||!myTurn?'disabled':''}>${x}</button>`).join('')}</div>${bLegend(opp.name)}
       <p class="muted" style="font-size:.75em;margin:.5em 0 0">상대 판은 보이지 않습니다. 뒤로 가면 대결을 그만둡니다.</p>`,true,()=>quit(d));
     document.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-b]').forEach(x=>x.disabled=true);const x=+b.dataset.b;
       firebase.firestore().runTransaction(async tx=>{const s=await tx.get(gamesRef().doc(gid));const v=s.data();
@@ -68,13 +69,13 @@ function gamesListen(){if(GINV){GINV();GINV=null}if(LOCAL||!SYNC.live||!ME)retur
   GINV=gamesRef().where('b','==',ME).where('status','==','invite').onSnapshot(qs=>{if(ME!==me0)return;
     qs.docs.forEach(doc=>{const d=doc.data();if(GSEEN.has(doc.id)||Date.now()-d.ts>30*60e3)return;GSEEN.add(doc.id);
       try{navigator.vibrate&&navigator.vibrate([120,60,120])}catch(e){}gameInvite(doc.id,d)})},e=>console.warn('games',e))}
-function gameInvite(gid,d){const who=mem(d.a)||{name:'가족'};
-  sheet(`<div class="result"><div class="big">${esc(who.name)}님의 빙고 대결 신청</div><div class="fact">${d.n}×${d.n} 판 · 먼저 ${d.goal}줄</div>
+function gameInvite(gid,d){const who=mem(d.a)||{name:'가족'},om=d.type==='omok';
+  sheet(`<div class="result"><div class="big">${esc(who.name)}님의 ${om?'오목':'빙고'} 대결 신청</div><div class="fact">${om?`${d.size||OM_N}×${d.size||OM_N} 판 · ${esc(who.name)}님이 흑(먼저)`:`${d.n}×${d.n} 판 · 먼저 ${d.goal}줄`}</div>
     <div class="actions"><button class="btn ghost" id="gno">다음에</button><button class="btn" id="gyes">한 판 하기</button></div></div>`,true,null);
   $('#gno').onclick=()=>{gamesRef().doc(gid).update({status:'decline'}).catch(()=>{});close();render()};
   $('#gyes').onclick=async()=>{try{const s=await gamesRef().doc(gid).get();const x=s.data();
       if(!x||x.status!=='invite'){toast('신청이 취소됐어요');close();return}
-      await gamesRef().doc(gid).update({status:'play',ts:Date.now()});bingoOnline(gid)}catch(e){console.warn(e);toast('시작하지 못했어요')}}}
+      await gamesRef().doc(gid).update({status:'play',ts:Date.now()});(x.type==='omok'?omokOnline:bingoOnline)(gid)}catch(e){console.warn(e);toast('시작하지 못했어요')}}}
 async function gameFromPush(id){try{const s=await gamesRef().doc(id).get();const d=s.data();if(d&&d.b===ME&&d.status==='invite'){GSEEN.add(id);gameInvite(id,d)}}catch(e){}}
 
 // ── 지뢰찾기 ──
@@ -192,3 +193,68 @@ function game2048(){
       move(Math.abs(dx)>Math.abs(dy)?(dx>0?'r':'l'):(dy>0?'d':'u'))})};
   add();add();draw();
 }
+
+// ── 오목: 13×13, 흑(먼저)·백, 다섯 개 이상 이으면 승리 ──
+// 대결: games/{id} {type:'omok', a(흑), b(백), size, moves:[칸 번호], turn, status, winner, line:[이긴 다섯 칸]}
+const OM_N=13;
+function omWin(st,i,n){const x=i%n,y=Math.floor(i/n),c=st[i];if(!c)return null;
+  for(const [dx,dy] of [[1,0],[0,1],[1,1],[1,-1]]){const L=[i];
+    for(const s of [1,-1]){let k=1;while(true){const a=x+dx*k*s,b=y+dy*k*s;if(a<0||b<0||a>=n||b>=n||st[b*n+a]!==c)break;L.push(b*n+a);k++}}
+    if(L.length>=5)return L}return null}
+const omStones=(moves,n)=>{const st=Array(n*n).fill(0);moves.forEach((m,k)=>st[m]=k%2===0?1:2);return st};
+// 컴퓨터: 빈칸마다 '내가 두면'·'상대가 두면' 이어지는 정도를 점수로 매겨 가장 좋은 칸
+function omAI(st,n,me,lv){const op=me===1?2:1,cand=[];
+  const near=i=>{const x=i%n,y=Math.floor(i/n);for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const a=x+dx,b=y+dy;if(a>=0&&b>=0&&a<n&&b<n&&st[b*n+a])return true}return false};
+  const score=(i,c)=>{const x=i%n,y=Math.floor(i/n);let s=0;
+    for(const [dx,dy] of [[1,0],[0,1],[1,1],[1,-1]]){let cnt=1,open=0;
+      for(const sg of [1,-1]){let k=1;while(true){const a=x+dx*k*sg,b=y+dy*k*sg;if(a<0||b<0||a>=n||b>=n)break;const v=st[b*n+a];if(v===c){cnt++;k++;continue}if(!v)open++;break}}
+      s+=cnt>=5?1e6:cnt===4?(open===2?1e5:open?1e4:0):cnt===3?(open===2?5e3:open?400:0):cnt===2?(open===2?200:open?30:0):open?5:0}return s};
+  st.forEach((v,i)=>{if(v||!near(i))return;const a=score(i,me),d=score(i,op);cand.push([i,Math.max(a*1.1,d*(lv==='easy'?0.6:1))+Math.random()])});
+  if(!cand.length)return Math.floor(n*n/2);
+  cand.sort((p,q)=>q[1]-p[1]);const top=lv==='easy'?cand.slice(0,4):lv==='normal'?cand.slice(0,2):cand.slice(0,1);
+  return top[Math.floor(Math.random()*top.length)][0]}
+function omBoard(st,n,o){const last=o.last,line=new Set(o.line||[]);
+  return `<div class="omok" style="--n:${n}">${st.map((v,i)=>`<button data-om="${i}" ${v||o.lock?'disabled':''} aria-label="${i%n+1}열 ${Math.floor(i/n)+1}줄">${v?`<i class="st ${v===1?'bk':'wt'} ${i===last?'last':''} ${line.has(i)?'win':''}"></i>`:''}</button>`).join('')}</div>`}
+function gameOmok(){const online=!LOCAL&&SYNC.live,opp=S.members.filter(x=>x.id!==ME);
+  sheet(`${lvBar('omok')}<h2 style="margin-top:.5em">오목 · 누구와 할까요?</h2><p class="muted" style="font-size:.85em;margin:.2em 0 0">13×13 판에 가로·세로·대각선으로 다섯 개를 먼저 이으면 이깁니다. 대결은 신청한 사람이 흑(먼저)입니다.</p>
+    <div class="glist">${online?opp.map(o=>`<button data-oo="${o.id}"><b>${esc(o.name)}에게 대결 신청</b><span>${esc(o.name)} 폰에 알림이 갑니다</span></button>`).join(''):''}
+    <button data-oo="cpu"><b>혼자 하기</b><span>컴퓨터와 대결 · ${lvName('omok')}</span></button></div>`,true,gameMenu);
+  bindLv('omok',gameOmok);
+  document.querySelectorAll('[data-oo]').forEach(b=>b.onclick=async()=>{const id=b.dataset.oo;if(id==='cpu')return omokCpu();b.disabled=true;
+    try{const d=await gamesRef().add({type:'omok',a:ME,b:id,size:OM_N,moves:[],turn:'a',status:'invite',ts:Date.now()});omokOnline(d.id)}catch(e){console.warn(e);toast('대결을 신청하지 못했어요');b.disabled=false}})}
+function omokCpu(){const n=OM_N,lv=lvOf('omok');let moves=[],over=false,busy2=false;
+  const draw=()=>{const st=omStones(moves,n),meTurn=moves.length%2===0&&!over;
+    sheet(`<div class="bhead"><span class="turn">${over?'끝':meTurn?'내 차례 · 흑':'컴퓨터 생각 중…'}</span><span class="num" style="font-size:.85em">${moves.length}수 · ${lvName('omok')}</span></div>
+      ${omBoard(st,n,{last:moves.at(-1),line:over&&over.line,lock:!meTurn})}
+      <div class="blg"><span><i class="bk"></i>나 (흑)</span><span><i class="wt"></i>컴퓨터 (백)</span></div>
+      <div class="actions" style="margin-top:.5em"><button class="btn ghost" id="omu" ${moves.length<2||over?'disabled':''}>한 수 무르기</button><button class="btn ghost" id="omn">새 판</button></div>`,true,gameOmok);
+    $('#omu').onclick=()=>{moves=moves.slice(0,-2);draw()};$('#omn').onclick=()=>{moves=[];over=false;draw()};
+    document.querySelectorAll('[data-om]').forEach(b=>b.onclick=()=>{if(!meTurn||busy2)return;put(+b.dataset.om)})};
+  const end=(t,line)=>{over={line};draw();markLog('game',true);setTimeout(()=>resultView(t,[`${moves.length}수`,partLine()],'omok',omokCpu),1400)};
+  const put=i=>{const st=omStones(moves,n);if(st[i])return;moves.push(i);const s2=omStones(moves,n),w=omWin(s2,i,n);if(w)return end('이겼어요',w);
+    if(moves.length>=n*n)return end('비겼어요',[]);busy2=true;draw();
+    setTimeout(()=>{const s3=omStones(moves,n),j=omAI(s3,n,2,lv);moves.push(j);busy2=false;const w2=omWin(omStones(moves,n),j,n);if(w2)return end('컴퓨터가 이겼어요',w2);draw()},500)};
+  draw()}
+function omokOnline(gid){if(GUNSUB){GUNSUB();GUNSUB=null}let ended=false;
+  const stop=()=>{if(GUNSUB){GUNSUB();GUNSUB=null}};
+  const quit=d=>{stop();if(d&&['invite','play'].includes(d.status))gamesRef().doc(gid).update({status:'cancel',by:ME}).catch(()=>{});gameMenu()};
+  GUNSUB=gamesRef().doc(gid).onSnapshot(snap=>{if(ended)return;const d=snap.data();if(!d){stop();return}
+    const role=d.a===ME?'a':'b',other=role==='a'?'b':'a',opp=mem(d[other])||{name:'상대'},n=d.size||OM_N,moves=d.moves||[];
+    if(d.status==='invite'){sheet(`<div class="result"><div class="big">${esc(opp.name)} 기다리는 중</div><div class="fact">${esc(opp.name)} 폰에 "오목 한 판 하실래요?" 알림을 보냈어요</div>
+        <div class="actions"><button class="btn ghost" id="gcx">신청 취소</button></div></div>`,true,()=>quit(d));$('#gcx').onclick=()=>quit(d);return}
+    if(['cancel','decline'].includes(d.status)){ended=true;stop();const t=d.status==='decline'?`${opp.name}님이 다음에 하자고 했어요`:d.by===ME?'대결을 그만뒀어요':`${opp.name}님이 대결을 그만뒀어요`;
+      sheet(`<div class="result"><div class="big">${esc(t)}</div><div class="actions"><button class="btn ghost" id="more">다른 놀이</button><button class="btn ghost" id="ok">처음 화면</button></div></div>`,true,gameMenu);
+      $('#more').onclick=gameMenu;$('#ok').onclick=()=>{close();render()};return}
+    const st=omStones(moves,n),over=d.status==='over',myTurn=d.status==='play'&&d.turn===role,myCol=role==='a'?'흑':'백';
+    sheet(`<div class="bhead"><span class="turn">${over?'끝':myTurn?`내 차례 · ${myCol}`:esc(opp.name)+' 차례'}</span><span class="num" style="font-size:.85em">${moves.length}수</span></div>
+      ${omBoard(st,n,{last:moves.at(-1),line:d.line,lock:!myTurn})}
+      <div class="blg"><span><i class="${role==='a'?'bk':'wt'}"></i>나 (${myCol})</span><span><i class="${role==='a'?'wt':'bk'}"></i>${esc(opp.name)} (${role==='a'?'백':'흑'})</span></div>
+      <p class="muted" style="font-size:.75em;margin:.5em 0 0;text-align:center">뒤로 가면 대결을 그만둡니다.</p>`,true,()=>quit(d));
+    document.querySelectorAll('[data-om]').forEach(b=>b.onclick=()=>{if(!myTurn)return;const i=+b.dataset.om;document.querySelectorAll('[data-om]').forEach(x=>x.disabled=true);
+      firebase.firestore().runTransaction(async tx=>{const s=await tx.get(gamesRef().doc(gid));const v=s.data();const mv=v.moves||[];
+        if(v.status!=='play'||v.turn!==role||mv.includes(i))return;const nm=[...mv,i],w=omWin(omStones(nm,n),i,n);
+        tx.update(gamesRef().doc(gid),w?{moves:nm,status:'over',winner:role,line:w,ts:Date.now()}:nm.length>=n*n?{moves:nm,status:'over',winner:'draw',ts:Date.now()}:{moves:nm,turn:other,ts:Date.now()})})
+        .catch(e=>{console.warn(e);toast('두지 못했어요')})});
+    if(over){ended=true;stop();markLog('game',true);const w=d.winner;
+      setTimeout(()=>resultView(w==='draw'?'비겼어요':w===role?'오목! 이겼어요':`${opp.name} 승리`,[`${moves.length}수`,partLine()],null,gameOmok),1500)}
+  },e=>{console.warn('omok',e);toast('대결 정보를 받지 못했어요')})}

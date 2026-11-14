@@ -807,3 +807,22 @@ body.kbopen .tabbar{display:none}
 /* 나눔 버튼은 한 줄 (글씨를 크게 해도 두 줄로 깨지지 않게) */
 .seg button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 #tmode button{font-size:.92em;padding-inline:.2em}
+
+/* 빙고: 내가 부른 수 초록, 상대가 부른 수 주황, 방금 부른 수 테두리 */
+.bingo button.mk.bop{background:var(--sun);border-color:var(--sun);color:#fff}
+.bingo button.last{box-shadow:0 0 0 3px var(--ink) inset}
+.blg{display:flex;gap:1em;justify-content:center;font-size:.8em;color:var(--muted);margin-top:.5em;flex-wrap:wrap}
+.blg span{display:flex;align-items:center;gap:.35em}
+.blg i{width:.9em;height:.9em;border-radius:.2em;display:inline-block}
+.blg i.bme{background:var(--pine)}.blg i.bop{background:var(--sun)}
+
+/* 오목 판 */
+.omok{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));background:#E3C08A;border:2px solid #9C7A44;border-radius:6px;padding:2px;touch-action:manipulation;margin-top:.4em}
+.omok button{aspect-ratio:1;border:0;padding:0;background:linear-gradient(#7d6034,#7d6034) center/100% 1px no-repeat,linear-gradient(#7d6034,#7d6034) center/1px 100% no-repeat;display:grid;place-items:center;min-width:0}
+.omok button:disabled{cursor:default}
+.omok .st{width:86%;height:86%;border-radius:50%;display:block;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.omok .st.bk{background:radial-gradient(circle at 35% 30%,#555,#111)}
+.omok .st.wt{background:radial-gradient(circle at 35% 30%,#fff,#d8d8d8)}
+.omok .st.last{outline:2px solid #D2452E;outline-offset:1px}
+.omok .st.win{outline:3px solid #F2C14E;outline-offset:1px}
+.blg i.bk{background:#111;border-radius:50%}.blg i.wt{background:#fff;border:1px solid #999;border-radius:50%}

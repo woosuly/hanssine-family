@@ -17,6 +17,7 @@ function resultView(title,lines,g,restart){
 }
 const GAMES=[
   ['bingo','빙고','가족과 각자 폰으로 대결 · 혼자도 가능',()=>bingoSetup()],
+  ['omok','오목','가족과 각자 폰으로 대결 · 혼자도 가능',()=>gameOmok()],
   ['cross','낱말 가로세로','뜻풀이 보고 낱말 맞히기 · 힌트 있음',()=>crossword()],
   ['pairs','가족 얼굴 짝 맞추기','같은 얼굴 두 장 찾기',()=>gamePairs()],
   ['numbers','숫자 차례로 누르기','숫자를 순서대로 빨리 누르기',()=>gameNumbers()],
@@ -27,16 +28,18 @@ const GAMES=[
 ];
 // 많이 한 놀이 3개는 고정, 나머지는 분기마다 자동으로 바뀜 (가족 전체 횟수 기준)
 const gCount=id=>((S.gstat||{})[id]||0);
-function gameTop(){return GAMES.map((g,i)=>[g,i]).sort((x,y)=>gCount(y[0][0])-gCount(x[0][0])||x[1]-y[1]).slice(0,3).map(x=>x[0])}
+const VS=['bingo','omok'];
+function gameTop(){return GAMES.filter(g=>!VS.includes(g[0])).map((g,i)=>[g,i]).sort((x,y)=>gCount(y[0][0])-gCount(x[0][0])||x[1]-y[1]).slice(0,3).map(x=>x[0])}
 const quarter=()=>{const t=today0();return {key:t.getFullYear()*4+Math.floor(t.getMonth()/3),q:Math.floor(t.getMonth()/3)}};
 function gameRotate(){const top=gameTop().map(g=>g[0]);let seed=quarter().key*9301+49297;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
-  return GAMES.filter(g=>!top.includes(g[0])).map(g=>[g,rnd()]).sort((a,b)=>a[1]-b[1]).slice(0,3).map(x=>x[0])}
+  return GAMES.filter(g=>!top.includes(g[0])&&!VS.includes(g[0])).map(g=>[g,rnd()]).sort((a,b)=>a[1]-b[1]).slice(0,3).map(x=>x[0])}
 const todayGame=()=>gameTop()[0][0];
 function gameStart(id){S.gstat=S.gstat||{};S.gstat[id]=(S.gstat[id]||0)+1;save();GAMES.find(g=>g[0]===id)[3]()}
-function gameMenu(){const top=gameTop(),rot=gameRotate(),q=quarter().q;
-  const item=(g,rank)=>`<button data-g="${g[0]}" class="${rank===1?'today':''}"><b>${rank?rank+'위 · ':''}${g[1]}</b><span>${g[2]}${['bingo','cross','pairs','numbers','who','mines'].includes(g[0])?' · '+lvName(g[0]):''}${gCount(g[0])?` · 가족이 ${gCount(g[0])}번 함`:''}</span></button>`;
+function gameMenu(){const top=gameTop(),rot=gameRotate(),q=quarter().q,vs=GAMES.filter(g=>VS.includes(g[0]));
+  const item=(g,rank)=>`<button data-g="${g[0]}"><b>${rank?rank+'위 · ':''}${g[1]}</b><span>${g[2]}${['bingo','omok','cross','pairs','numbers','who','mines'].includes(g[0])?' · '+lvName(g[0]):''}${gCount(g[0])?` · 가족이 ${gCount(g[0])}번 함`:''}</span></button>`;
   sheet(`<h2>놀이</h2>
-    <p class="muted" style="font-size:.85em;margin:.6em 0 0">가족이 많이 하는 놀이</p><div class="glist">${top.map((g,i)=>item(g,i+1)).join('')}</div>
+    <p class="muted" style="font-size:.85em;margin:.6em 0 0">가족과 대결</p><div class="glist">${vs.map(g=>item(g,0)).join('')}</div>
+    <p class="muted" style="font-size:.85em;margin:.9em 0 0">가족이 많이 하는 놀이</p><div class="glist">${top.map((g,i)=>item(g,i+1)).join('')}</div>
     <p class="muted" style="font-size:.85em;margin:.9em 0 0">이번 분기 놀이 (${q*3+1}~${q*3+3}월) · 분기마다 바뀝니다</p><div class="glist">${rot.map(g=>item(g,0)).join('')}</div>`,true);
   document.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>gameStart(b.dataset.g));
 }
@@ -89,7 +92,7 @@ function gamePairs(){
 function bingo(oppName,remote){
   const [n,GOAL]={easy:[3,1],normal:[4,2],hard:[5,3]}[lvOf('bingo')],N=n*n;
   const board=()=>[...Array(N)].map((_,i)=>i+1).sort(()=>Math.random()-.5);
-  const mine=board(),theirs=board(),called=new Set();let myTurn=true,over=false,last='';
+  const mine=board(),theirs=board(),called=new Set(),byMe=new Set();let myTurn=true,over=false,last='',lastN=0;
   const R=[...Array(n).keys()];
   const lines=b=>{const mk=i=>called.has(b[i]);let c=0;
     R.forEach(r=>{if(R.every(k=>mk(r*n+k)))c++});R.forEach(k=>{if(R.every(r=>mk(r*n+k)))c++});
@@ -98,16 +101,16 @@ function bingo(oppName,remote){
     sheet(`<div class="bhead"><span class="turn">${over?'끝':myTurn?'내 차례':esc(oppName)+' 차례'}</span>
         <span class="num" style="font-size:.85em">나 <b>${lines(mine)}</b>줄 · ${esc(oppName)} <b>${lines(theirs)}</b>줄 · 목표 ${GOAL}줄</span></div>
       <p class="muted" style="font-size:.85em;margin:0 0 .4em">${last||(myTurn?'부를 숫자를 누르세요':'')}${!myTurn&&!over?` ${esc(oppName)}${remote?' 폰에서':'가'} 고르는 중…`:''}</p>
-      <div class="bingo" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${mine.map(x=>`<button data-b="${x}" class="${called.has(x)?'mk':''}" style="font-size:${n>4?1.15:1.5}em" ${called.has(x)||over||!myTurn?'disabled':''}>${x}</button>`).join('')}</div>
-`,true,()=>{over=true;bingoSetup()});
+      <div class="bingo" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${mine.map(x=>`<button data-b="${x}" class="${called.has(x)?'mk '+(byMe.has(x)?'bme':'bop'):''} ${x===lastN?'last':''}" style="font-size:${n>4?1.15:1.5}em" ${called.has(x)||over||!myTurn?'disabled':''}>${x}</button>`).join('')}</div>
+      ${bLegend(oppName)}`,true,()=>{over=true;bingoSetup()});
     document.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>call(+b.dataset.b,true));
   };
-  const call=(x,byMe)=>{if(over||called.has(x))return;called.add(x);last=byMe?`내가 ${x}을(를) 불렀어요.`:`${oppName}이(가) ${x}을(를) 불렀어요.`;
+  const call=(x,me1)=>{if(over||called.has(x))return;called.add(x);lastN=x;if(me1)byMe.add(x);last=me1?`내가 ${x}을(를) 불렀어요.`:`${oppName}이(가) ${x}을(를) 불렀어요.`;
     const a=lines(mine),b=lines(theirs);
     if(a>=GOAL||b>=GOAL){over=true;markLog('game',true);draw();
       const t=a>=GOAL&&b>=GOAL?'비겼어요':a>=GOAL?'빙고! 이겼어요':`${oppName} 빙고`;
       setTimeout(()=>resultView(t,[`나 ${a}줄 · ${esc(oppName)} ${b}줄`,`부른 숫자 <b class="num">${called.size}개</b>`,partLine()],'bingo',bingoSetup),1300);return}
-    myTurn=!byMe;draw();
+    myTurn=!me1;draw();
     if(!myTurn)setTimeout(()=>{if(over)return;const free=theirs.filter(y=>!called.has(y));let best=free[0],bs=-1;
       free.forEach(y=>{called.add(y);const s=lines(theirs)*10+Math.random()*6;called.delete(y);if(s>bs){bs=s;best=y}});call(best,false)},1100);
   };
@@ -157,3 +160,6 @@ function crossword(){
   };
   draw();
 }
+
+// 빙고 색 설명: 내가 부른 수(초록) · 상대가 부른 수(주황)
+const bLegend=opp=>`<div class="blg"><span><i class="bme"></i>내가 부른 수</span><span><i class="bop"></i>${esc(opp)}이(가) 부른 수</span></div>`;

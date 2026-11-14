@@ -128,7 +128,8 @@ exports.notifyGame = onDocumentCreated('families/hanssine/games/{gid}', async (e
   const {members, devices} = await loadFamily();
   const who = members[g.a];
   const targets = devices.filter(d => d.member === g.b);
-  await send(targets, {k: 'game', id: ev.params.gid, title: '빙고 대결 신청', body: `${who ? who.name : '가족'}님이 빙고 한 판 하자고 해요`, tag: 'game-' + ev.params.gid});
+  const nm = g.type === 'omok' ? '오목' : '빙고';
+  await send(targets, {k: 'game', id: ev.params.gid, title: `${nm} 대결 신청`, body: `${who ? who.name : '가족'}님이 ${nm} 한 판 하자고 해요`, tag: 'game-' + ev.params.gid});
 });
 
 // 따로 만든 대화방: 방 멤버에게만 알림
