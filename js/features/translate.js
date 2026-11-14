@@ -54,7 +54,7 @@ async function translate(text,from,to,img){
 function transSheet(){
   tripLangOnce();const L=lg(TR.to);
   const langSel=`<select id="tlang" class="chip" aria-label="상대 언어">${LANGS.map(([c,n])=>`<option value="${c}" ${c===TR.to?'selected':''}>${n}</option>`).join('')}</select>`;
-  const tabs=`<div class="seg" id="tmode">${[['text','번역'],['face','마주보고 통역'],['phrase','상황별 표현']].map(([k,n])=>`<button data-v="${k}" class="${TR.mode===k?'on':''}">${n}</button>`).join('')}</div>`;
+  const tabs=`<div class="seg" id="tmode">${[['text','번역'],['face','통역'],['phrase','상황 문장']].map(([k,n])=>`<button data-v="${k}" class="${TR.mode===k?'on':''}">${n}</button>`).join('')}</div>`;
   let body='';
   if(TR.mode==='text'){const r=TR.last;
     body=`<div class="tr-in"><div class="row between"><b>한국어</b><span class="row" style="gap:4px">${ib('tswap','swap','방향 바꾸기')}${langSel}</span></div>

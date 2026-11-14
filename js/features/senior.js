@@ -59,7 +59,7 @@ function srFam(){
   const m=me(),poll=S.poll&&S.poll.open?S.poll:null;const up=upcoming(45).slice(0,4);
   const order=['p','h1','h2','h3'];const people=S.members.filter(x=>x.id!==ME).sort((a,b)=>order.indexOf(a.house)-order.indexOf(b.house));
   return `<div class="fam-scroll">
-    <div class="sr-h2">연락하기</div><div class="calls clist">${people.map(d=>`<button ${d.phone?`data-call="${d.id}"`:'disabled class="nophone"'}>${av(d)}<span style="display:flex;flex-direction:column;align-items:flex-start"><b>${esc(d.name)}</b><span class="muted num" style="font-size:.8em">${d.role==='parent'?'':esc(HOUSES[d.house])+' · '}${d.phone?esc(d.phone):'번호 미등록'}</span></span></button>`).join('')||'<div class="muted">등록된 연락처가 없습니다</div>'}</div>
+    <div class="sr-h2">연락하기</div><div class="calls clist">${people.map(d=>`<button ${d.phone?`data-call="${d.id}"`:'disabled class="nophone"'}>${av(d)}<span style="display:flex;flex-direction:column;align-items:flex-start"><b>${esc(d.name)}</b><span class="muted num" style="font-size:.8em">${d.role==='parent'?'':esc(HOUSES[d.house])+' · '}<span style="white-space:nowrap">${d.phone?esc(d.phone):'번호 미등록'}</span></span></span></button>`).join('')||'<div class="muted">등록된 연락처가 없습니다</div>'}</div>
     ${poll?`<div class="sr-h2">${esc(poll.q)}</div><div class="poll-big">${poll.opts.map((o,i)=>`<button data-pv="${i}" class="${o.v.includes(m.id)?'on':''}"><span>${esc(o.t)}</span><span class="num">${o.v.length}명</span></button>`).join('')}</div>`:''}
     <div class="sr-h2">다가오는 일정</div><div class="card" style="padding:.3em .8em">${up.map(e=>`<div class="mini" style="font-size:.9em"><span>${esc(e.title)}</span><b style="color:var(--sun)">${dday(e._n)}</b></div>`).join('')||'<span class="muted">없음</span>'}</div>
     <div class="actions" style="margin-top:.4em"><button class="btn ghost" id="falb">사진첩</button><button class="btn ghost" id="sset">${GEARSVG}설정</button></div></div>`;
@@ -125,7 +125,7 @@ function srTalk(){
     <div class="tlog" id="tlog">${log}</div>
     ${ai&&CHAT.length?'<button class="chip" id="snew" style="align-self:flex-end">새 대화 시작</button>':''}
     ${ai?'':`${rid?'':`<div class="typing big" id="typing">${typingText()}</div>`}<div id="rbar">${replyBarHtml()}</div>`}
-    <div class="tin"><textarea id="tq" rows="2" placeholder="여기에 글로 쓰거나, 아래 '음성 입력'을 누르세요"></textarea>
+    <div class="tin"><textarea id="tq" rows="2" placeholder="글로 쓰거나 '음성 입력'을 누르세요"></textarea>
       <div class="tbtns ${ai?'':'three'}">${ai?'':'<button class="stkbig" id="tstk">이모티콘</button>'}<button class="micbig" id="tmic">${MICSVG}음성 입력</button><button class="sendbig" id="tsend">보내기</button></div></div>`;
 }
 function bindSrTalk(){

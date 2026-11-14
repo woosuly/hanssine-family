@@ -1,6 +1,6 @@
 /* 레이아웃: 폰 한 화면 앱. 어르신 화면은 단일 스크롤(큰 사진+큰 버튼), 자녀 화면은 하단 4탭 */
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent;word-break:keep-all;overflow-wrap:break-word}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
@@ -193,7 +193,7 @@ body.senior{font-size:calc(19px * var(--k,1));overflow:hidden}
 /* AI 채팅 */
 .chat{display:flex;flex-direction:column;height:100%;gap:10px}
 .msgs{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-block:4px}
-.msg{max-width:88%;padding:9px 12px;border-radius:14px;white-space:pre-wrap;word-break:break-word}
+.msg{max-width:88%;padding:9px 12px;border-radius:14px;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
 .msg.user{align-self:flex-end;background:var(--pine);color:var(--pine-ink)}
 .msg.ai{align-self:flex-start;background:var(--surface);border:1px solid var(--line)}
 .msg.local{align-self:stretch;max-width:100%;background:var(--sun-soft);font-size:14px}
@@ -318,7 +318,7 @@ body.senior #app{height:100%}
 .cmb{display:flex;flex-direction:column;gap:2px;max-width:78%;min-width:0;align-items:flex-start}
 .cm.mine .cmb{align-items:flex-end}
 .cmn{font-size:12px;color:var(--muted)}
-.bub{background:var(--bg);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:8px 11px;white-space:pre-wrap;word-break:break-word}
+.bub{background:var(--bg);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:8px 11px;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
 .bub.mine{background:var(--pine);color:var(--pine-ink);border-color:transparent;border-radius:14px 4px 14px 14px}
 .bub.aib{border-color:var(--pine)}
 .cmt{font-size:11px;color:var(--muted)}
@@ -606,7 +606,7 @@ body.dragging{user-select:none;-webkit-user-select:none}
 .cmt.re{margin-left:36px}
 .cmt .av{width:28px;height:28px;font-size:12px}
 .cmtb{flex:1;min-width:0;font-size:14px}
-.cmtt{white-space:pre-wrap;word-break:break-word}
+.cmtt{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
 .cmta{display:flex;gap:12px;margin-top:2px}
 .cmta .link{font-size:12px;color:var(--muted)}
 .replybar{display:flex;justify-content:space-between;align-items:center;font-size:13px;background:var(--pine-soft);color:var(--pine);border-radius:10px;padding:6px 10px}
@@ -790,5 +790,20 @@ body.kbopen .tabbar{display:none}
 .sr-wx{flex:none}
 .sr-wx small{white-space:nowrap}
 /* 부모님 머리줄: 글씨를 크게 해도 날짜와 날씨가 겹치지 않게 (요일은 아랫줄로) */
-.sr-day small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .sr-wx{padding:.2em .55em .2em .3em}
+
+/* 부모님 대화 버튼: 세 칸일 때 아이콘 위·글자 아래 (글씨를 크게 해도 '음성 입력'이 한 줄) */
+.tbtns.three .micbig{flex-direction:column;gap:.1em;line-height:1.2}
+.tbtns button{min-width:0}
+
+/* 부모님 화면을 가장 큰 글씨로 써도 버튼 글자가 깨지지 않게 */
+.tbtns button{white-space:nowrap}
+.tbtns.three button{font-size:.86em}
+.reacts.r5{grid-template-columns:repeat(auto-fit,minmax(4.6em,1fr))}
+.salb .actions .btn{white-space:nowrap;font-size:.92em}
+.senior .seg button,.sr .seg button{white-space:nowrap;font-size:.92em;padding-inline:.3em}
+.sr-day small{display:block}
+.mini b,.sr-line b,.annl b,.num{white-space:nowrap}
+/* 나눔 버튼은 한 줄 (글씨를 크게 해도 두 줄로 깨지지 않게) */
+.seg button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#tmode button{font-size:.92em;padding-inline:.2em}

@@ -73,7 +73,7 @@ function eventForm(p,after,back){
     <div class="row" style="flex-wrap:nowrap"><div class="field" style="flex:1"><label for="etm">시간 (선택)</label><input type="time" id="etm" value="${p.time||''}"></div>
       <div class="field" style="flex:1.4"><label for="epl">장소 (선택)</label><input id="epl" value="${esc(p.place||'')}" placeholder="예: 부모님 댁"></div></div>
     <div class="field" id="escw"><label for="esc">병원 동행 담당</label><select id="esc"><option value="">정하지 않음</option>${['h1','h2','h3'].map(h=>`<option value="${h}" ${p.escort===h?'selected':''}>${HOUSES[h]}</option>`).join('')}</select></div>
-    <div class="field" id="repw"><label>반복</label><div class="seg" id="rep">${[['none','안 함'],['solar','매년 양력'],['lunar','매년 음력']].map(([k,n])=>`<button data-v="${k}" class="${(p.repeat||'none')===k?'on':''}">${n}</button>`).join('')}</div></div>
+    <div class="field" id="repw"><label>매년 반복</label><div class="seg" id="rep">${[['none','안 함'],['solar','양력으로'],['lunar','음력으로']].map(([k,n])=>`<button data-v="${k}" class="${(p.repeat||'none')===k?'on':''}">${n}</button>`).join('')}</div></div>
     <div class="field"><label>미리 알림</label><div class="row">${REMINDS.map(([k,n])=>`<label class="chip"><input type="checkbox" data-rm="${k}" ${(p.remind||['d1']).includes(k)?'checked':''}> ${n}</label>`).join('')}</div></div>
     <label class="row" id="rsw"><input type="checkbox" id="ersvp" ${p.rsvp||isNew?'checked':''}> 가구별 참석 여부 받기</label>
     <div class="field"><label>표시 색</label><div class="swatches" id="ecol">${EVCOLORS.map(c=>`<button class="sw ${(p.color||TYPES[kind][1])===c?'on':''}" data-col="${c}" aria-label="색 ${c}"><i style="background:${c}"></i></button>`).join('')}</div></div>
