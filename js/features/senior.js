@@ -76,6 +76,7 @@ function seniorSettings(){
   const mm=me();
   sheet(`<div class="stack"><h2>내 사진</h2><div class="row" style="gap:14px;align-items:center">${av(mm,'big')}<div class="stack" style="gap:6px"><button class="btn" id="myph">${mm.photo?'사진 바꾸기':'사진 넣기'}</button>${mm.photo?'<button class="btn ghost" id="myphx">사진 빼기</button>':''}</div></div>
     <input type="file" id="myphf" accept="image/*" hidden>
+    ${HC()?`<h2>걸음 수</h2><button class="btn block" id="stepc">걸음 수 자동으로 가져오기</button>`:''}
     <h2>글씨 크기</h2>${fsSeg()}
     <h2>홈 배경 사진</h2><img src="${srBg()}" alt="" class="bgprev">
     <div class="actions"><button class="btn" id="bgpick">사진첩에서 고르기</button><button class="btn ghost" id="bgup">휴대폰 사진</button></div>
@@ -83,6 +84,7 @@ function seniorSettings(){
     ${!LOCAL?`<h2>알림</h2>${pushRowHtml()}`:''}
     <button class="btn ghost block" id="chg">사용자 변경 (관리자)</button></div>`,true);
   bindFs(()=>{renderSenior();seniorSettings()});$('#chg').onclick=pinSheet;bindPushRow(seniorSettings);
+  if($('#stepc'))$('#stepc').onclick=()=>stepsSetup(seniorSettings);
   $('#myph').onclick=()=>$('#myphf').click();
   $('#myphf').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=await shrink((await readFile(f)).data,480);toast('사진 올리는 중…');const u=await upMedia(d,'profile.jpg');if(mm.photo)delMedia(mm.photo);mm.photo=u;save();toast('사진을 넣었어요');seniorSettings()}catch(er){upFail(er)}};
   if($('#myphx'))$('#myphx').onclick=()=>{delMedia(mm.photo);delete mm.photo;save();seniorSettings()};
@@ -161,7 +163,7 @@ function srTodo(){
   const lg=(S.log[ymd(today0())]||{})[ME]||{};
   return `<div class="todo-c"><div class="sr-h2">오늘의 할 일</div>
     <button class="tbig ${lg.game?'done':''}" id="tgame"><b>두뇌 놀이</b><span>${lg.game?'오늘 완료 · 한 번 더 하기':'많이 하는 놀이: '+GAMES.find(g=>g[0]===todayGame())[1]}</span></button>
-    <button class="tbig ${lg.ex?'done':''}" id="tex"><b>운동 기록</b><span>${(()=>{const st=exStat(ME);return st.today?`오늘 ${hm(st.today)} · ${diffTxt(st.today,st.yest)}`:`어제 ${hm(st.yest)} · 이번 달 ${hm(st.month)}`})()}</span></button>
+    <button class="tbig ${lg.ex?'done':''}" id="tex"><b>운동 기록</b><span>${stepsOf(ME,ymd(today0()))?`오늘 ${stepsTxt(stepsOf(ME,ymd(today0())))}${exStat(ME).today?' · '+hm(exStat(ME).today):''}`:''}${stepsOf(ME,ymd(today0()))?'':(()=>{const st=exStat(ME);return st.today?`오늘 ${hm(st.today)} · ${diffTxt(st.today,st.yest)}`:`어제 ${hm(st.yest)} · 이번 달 ${hm(st.month)}`})()}</span></button>
     <div class="card" style="font-size:.9em;text-align:center">${partLine()}</div></div>`;
 }
 function bindSrTodo(){$('#tgame').onclick=gameMenu;$('#tex').onclick=exercise}
