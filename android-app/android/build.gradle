@@ -22,6 +22,12 @@ allprojects {
         google()
         mavenCentral()
     }
+    // 걸음 수 플러그인이 요구하는 Health Connect 알파판은 Android 36 SDK가 필요 → 안정판 1.1.0으로 고정
+    configurations.all {
+        resolutionStrategy {
+            force 'androidx.health.connect:connect-client:1.1.0'
+        }
+    }
 }
 
 task clean(type: Delete) {
