@@ -854,3 +854,6 @@ body.senior.kbopen #tq{min-height:2.2em}
 .rccat{font-size:11px;font-weight:700;color:var(--pine);border:1px solid currentColor;border-radius:6px;padding:0 6px;white-space:nowrap}
 .rcsum{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:-2px 0 8px}
 .rcsum .chip{font-size:12px}
+select.rccat{appearance:auto;background:var(--surface);padding:2px 4px;font-size:12px;max-width:6.5em}
+select.rccat.need{color:var(--sun);border-color:var(--sun)}
+.rcin{flex:1;min-width:0;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:14px}

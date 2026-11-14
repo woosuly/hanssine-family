@@ -51,7 +51,7 @@ function bindDues(){
       <div class="rcbox"><div class="row" style="gap:6px"><button class="btn" id="rccam" style="flex:1">영수증 찍기</button><button class="btn ghost" id="rcpick" style="flex:1">사진에서 고르기</button></div>
         <input type="file" id="rcf1" accept="image/*" capture="environment" hidden><input type="file" id="rcf2" accept="image/*" multiple hidden>
         <div class="small muted">영수증을 찍으면 상호·날짜·금액·분류를 읽어 아래를 채웁니다. 여러 장이면 합계로 계산합니다.</div>
-        <div id="rclist" class="stack" style="gap:6px"></div></div>
+        <div id="rclist" class="stack" style="gap:6px"></div><button class="link small" id="rcadd" style="align-self:flex-start">+ 영수증 없이 직접 추가</button></div>
       <div class="field"><label for="st">모임 이름</label><input id="st" placeholder="예: 12월 가족 외식"></div>
       <div class="field"><label for="sa">총 금액(원)</label><input id="sa" inputmode="numeric" placeholder="380000"></div>
       <div class="field"><label>나눌 가구</label><div class="row">${['h1','h2','h3'].map(h=>`<label class="chip"><input type="checkbox" data-h="${h}" checked> ${HOUSES[h]}</label>`).join('')}</div></div>
@@ -63,26 +63,36 @@ function bindDues(){
       $('#prev').innerHTML=a?`회비 사용 <b class="num">${won(fd)}</b> · 남은 <b class="num">${won(rest)}</b> → ${hs.length}가구 각 <b class="num">${won(per)}</b>`:'금액을 넣으면 가구당 금액이 계산됩니다';return {a,hs,fd,ac}};
     document.querySelectorAll('.sheet input:not([type=file]),.sheet select').forEach(i=>i.oninput=i.onchange=calc);
     // 영수증: 읽은 결과 목록 → 총 금액·이름·날짜 자동 채움 (직접 고쳐도 됨)
-    const rcDraw=()=>{$('#rclist').innerHTML=RC.map((r,i)=>r.busy?`<div class="rcrow muted small">영수증 읽는 중…</div>`:
-        `<div class="rcrow"><span class="rccat">${esc(r.cat)}</span><span class="rcname">${esc(r.store||'영수증')}<br><span class="small muted">${esc(r.date||'')}${(r.items||[]).length?' · '+esc(r.items.slice(0,3).map(x=>x.name).join(', ')):''}</span></span><b class="num">${won(r.total)}</b><button class="chip" data-rcx="${i}" aria-label="빼기">✕</button></div>`).join('');
-      document.querySelectorAll('[data-rcx]').forEach(b=>b.onclick=()=>{RC.splice(+b.dataset.rcx,1);rcFill();rcDraw()})};
-    const rcFill=()=>{const ok=RC.filter(r=>!r.busy&&r.total);if(!ok.length)return;$('#sa').value=ok.reduce((s,r)=>s+r.total,0);
+    const catSel=(r,i)=>{const own=r.cat&&!RCATS.includes(r.cat);return `<select class="rccat ${r.cat&&r.cat!=='기타'?'':'need'}" data-rcc="${i}" aria-label="분류">${r.cat?'':'<option value="" selected>분류 선택</option>'}${RCATS.map(c=>`<option ${c===r.cat?'selected':''}>${c}</option>`).join('')}${own?`<option selected>${esc(r.cat)}</option>`:''}<option value="__own">직접 입력…</option></select>`};
+    const rcDraw=()=>{$('#rclist').innerHTML=RC.map((r,i)=>r.busy?`<div class="rcrow muted small">영수증 읽는 중…</div>`:r.manual?
+        `<div class="rcrow">${catSel(r,i)}<input class="rcin" data-rcn="${i}" value="${esc(r.store)}" placeholder="내용 (예: 주차비)"><input class="rcin num" data-rca="${i}" value="${r.total||''}" inputmode="numeric" placeholder="금액" style="width:6.5em"><button class="chip" data-rcx="${i}" aria-label="빼기">✕</button></div>`:
+        `<div class="rcrow">${catSel(r,i)}<span class="rcname">${esc(r.store||'영수증')}<br><span class="small muted">${esc(r.date||'')}${(r.items||[]).length?' · '+esc(r.items.slice(0,3).map(x=>x.name).join(', ')):''}</span></span><b class="num">${won(r.total)}</b><button class="chip" data-rcx="${i}" aria-label="빼기">✕</button></div>`).join('')+
+        (RC.some(r=>!r.busy&&(!r.cat||r.cat==='기타'))?'<div class="small" style="color:var(--sun)">분류를 못 정한 항목은 직접 골라 주세요. 목록에 없으면 "직접 입력"을 고르세요.</div>':'');
+      document.querySelectorAll('[data-rcx]').forEach(b=>b.onclick=()=>{RC.splice(+b.dataset.rcx,1);rcFill();rcDraw()});
+      document.querySelectorAll('[data-rcc]').forEach(s=>s.onchange=()=>{const r=RC[+s.dataset.rcc];if(s.value==='__own'){prompt2(s);return}r.cat=s.value;rcFill();rcDraw()});
+      document.querySelectorAll('[data-rcn]').forEach(x=>x.oninput=()=>{RC[+x.dataset.rcn].store=x.value.trim()});
+      document.querySelectorAll('[data-rca]').forEach(x=>x.oninput=()=>{RC[+x.dataset.rca].total=parseInt(x.value.replace(/\D/g,''),10)||0;rcFill()})};
+    // 직접 입력: 고른 칸 자리에 글 칸을 띄움
+    const prompt2=s=>{const i=+s.dataset.rcc,inp=document.createElement('input');inp.className='rcin';inp.placeholder='분류 (예: 주차비)';inp.style.width='7em';s.replaceWith(inp);inp.focus();
+      const done=()=>{const v=inp.value.trim();if(v)RC[i].cat=v.slice(0,12);rcFill();rcDraw()};inp.onblur=done;inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();inp.blur()}}};
+    $('#rcadd').onclick=()=>{RC.push({manual:true,store:'',total:0,cat:'',date:ymd(t)});rcDraw();const ins=document.querySelectorAll('[data-rcn]');if(ins.length)ins[ins.length-1].focus()};
+    const rcFill=()=>{const ok=RC.filter(r=>!r.busy&&r.total);if(!ok.length)return;ok.forEach(r=>{if(!r.cat)r.cat=''});$('#sa').value=ok.reduce((s,r)=>s+r.total,0);
       if(!$('#st').dataset.touched){const d0=ok.map(r=>r.date).filter(Boolean).sort()[0],cats=[...new Set(ok.map(r=>r.cat))];
         $('#st').value=`${d0?(+d0.slice(5,7))+'/'+(+d0.slice(8,10))+' ':''}${ok.length===1&&ok[0].store?ok[0].store:cats.join('·')}`}calc()};
     $('#st').addEventListener('input',()=>{$('#st').dataset.touched=1});
     const rcRead=async f=>{const r={busy:true};RC.push(r);rcDraw();
       try{const img=(await readFile(f)).data,small=await shrink(img,1600);
         const sys=`너는 영수증 판독기다. JSON만 출력한다. 영수증이 아니면 {"total":0}.
-형식: {"store":"상호","date":"YYYY-MM-DD(없으면 빈 문자열)","total":합계 정수(원, 할인 반영 최종 결제 금액),"cat":"식사|장보기|숙박|교통|선물|병원·약|놀이·관람|기타 중 하나","items":[{"name":"품목","amount":정수}] (최대 8개)}`;
+형식: {"store":"상호","date":"YYYY-MM-DD(없으면 빈 문자열)","total":합계 정수(원, 할인 반영 최종 결제 금액),"cat":"${RCATS.join('|')} 중 하나 (확실하지 않으면 기타)","items":[{"name":"품목","amount":정수}] (최대 8개)}`;
         const raw=await trAI(sys,[{role:'user',text:'이 영수증을 읽어 줘'}],small);const j=JSON.parse((raw.match(/\{[\s\S]*\}/)||['{}'])[0]);
         if(!(+j.total>0))throw new Error('영수증을 읽지 못했어요. 글자가 잘 보이게 다시 찍어 주세요');
-        Object.assign(r,{busy:false,store:String(j.store||'').slice(0,40),date:/^\d{4}-\d{2}-\d{2}$/.test(j.date||'')?j.date:'',total:Math.round(+j.total),cat:j.cat||'기타',items:(j.items||[]).slice(0,8)});
+        Object.assign(r,{busy:false,store:String(j.store||'').slice(0,40),date:/^\d{4}-\d{2}-\d{2}$/.test(j.date||'')?j.date:'',total:Math.round(+j.total),cat:RCATS.includes(j.cat)?j.cat:'기타',items:(j.items||[]).slice(0,8)});
         if(MEDIA_ON())upMedia(await shrink(img,1280),'receipt.jpg').then(u=>{r.img=u}).catch(()=>{})}
       catch(e){RC.splice(RC.indexOf(r),1);toast(aiErr(e).split('.')[0])}rcFill();rcDraw()};
     const pick=e=>{[...e.target.files].slice(0,10).forEach(rcRead);e.target.value=''};
     $('#rccam').onclick=()=>$('#rcf1').click();$('#rcpick').onclick=()=>$('#rcf2').click();$('#rcf1').onchange=pick;$('#rcf2').onchange=pick;
     $('#sv').onclick=()=>{const {a,hs,fd,ac}=calc();if(!a||!hs.length||!$('#st').value.trim())return;if(RC.some(r=>r.busy)){toast('영수증을 읽는 중이에요. 잠시만요');return}
-      const rcs=RC.filter(r=>r.total).map(r=>({store:r.store,date:r.date,total:r.total,cat:r.cat,items:r.items,img:r.img||''}));
+      const rcs=RC.filter(r=>r.total).map(r=>({store:r.store,date:r.date,total:r.total,cat:r.cat||'기타',items:r.items||[],img:r.img||''}));
       S.settles.push({id:uid(),date:(rcs.map(r=>r.date).filter(Boolean).sort()[0])||ymd(t),title:$('#st').value.trim(),total:a,fromDues:fd,houses:hs,...(rcs.length?{receipts:rcs}:{})});
       if(fd)S.dues.tx.push({id:uid(),date:ymd(t),desc:$('#st').value.trim()+' (정산)',amt:-fd,acc:ac});save();close();renderMain()}};
 }
@@ -157,3 +167,5 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-rcv]');if(
   sheet(`<div class="stack"><h2>${esc(s.title)} 영수증</h2>${s.receipts.map(x=>`<div class="card stack" style="gap:4px"><div class="row between"><b>${esc(x.store||'영수증')}</b><b class="num">${won(x.total)}</b></div>
     <div class="small muted">${esc(x.cat)}${x.date?' · '+esc(x.date):''}</div>${(x.items||[]).length?`<div class="small">${x.items.map(i=>`${esc(i.name)} ${won(i.amount||0)}`).join('<br>')}</div>`:''}
     ${x.img?`<img src="${esc(x.img)}" alt="영수증" style="width:100%;border-radius:10px">`:''}</div>`).join('')}</div>`)});
+
+const RCATS=['식비','교통비','숙박비','장보기','선물','병원·약','놀이·관람','기타'];
