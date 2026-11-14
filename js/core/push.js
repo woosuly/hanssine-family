@@ -66,10 +66,7 @@ function nativeAfterBoot(){const H=NPLUG('HanssineNative');if(!H||NBOOT)return;N
   H.takeLaunchPush().then(r=>{if(r&&r.k)openFromPush(r.k,r.id)}).catch(()=>{});
   H.addListener('pushOpen',r=>openFromPush(r.k,r.id));
   const A=NPLUG('App');
-  if(A){A.addListener('backButton',()=>{if($('#layer').innerHTML){close();return}
-      if(me()&&me().role==='parent'){if(SR_TAB!=='home'){SR_TAB='home';render();return}}else if(TAB!=='home'){TAB='home';render();return}
-      A.minimizeApp()});
-    checkApkUpdate(A)}}
+  if(A)checkApkUpdate(A)}
 async function checkApkUpdate(A){try{const last=+localStorage.getItem('hanssine-upd-ask')||0;if(Date.now()-last<864e5)return;
   const [info,rel]=await Promise.all([A.getInfo(),fetch('https://api.github.com/repos/woosuly/hanssine-family/releases/latest').then(r=>r.json())]);
   const latest=+String(rel.tag_name||'').replace(/^v1\./,'')||0,cur=+info.build||0;if(!latest||latest<=cur)return;
@@ -77,3 +74,20 @@ async function checkApkUpdate(A){try{const last=+localStorage.getItem('hanssine-
   sheet(`<div class="stack"><h2>새 버전이 있어요</h2><p class="muted">알림·음성 같은 휴대폰 기능이 좋아졌어요. 설치 파일을 받아 덮어 설치하면 됩니다. 대화와 사진은 그대로 남아요.</p>
     <a class="btn block" href="${APK_URL}">새 버전 받기</a><button class="btn ghost block" id="updlater">나중에</button></div>`);
   $('#updlater').onclick=close}catch(e){}}
+
+// 뒤로 가기: 열린 창 → 이전 창, 대화방·폴더 → 목록, 다른 탭 → 홈, 홈이면 앱을 뒤로 보냄
+// 앱(APK)은 안드로이드 뒤로 버튼, 브라우저·홈 화면 앱은 방문 기록으로 처리. 앱이 켜지자마자 등록
+function appBack(){const L=$('#layer');
+  if(L&&L.firstElementChild){if(document.querySelector('#mpop')){close();return true}goBack();return true}
+  if(!me())return false;
+  if(me().role==='parent'){if(SR_TAB==='talk'&&String(SCHAT).startsWith('room:')){SCHAT='fam';closeRoom();CROOM=null;render();return true}
+    if(SR_TAB!=='home'){SR_TAB='home';render();return true}return false}
+  if(TAB==='talk'&&CROOM){setRoom(null);return true}
+  if(TAB==='album'&&typeof ALBUMF!=='undefined'&&ALBUMF){ALBUMF=null;SELM=false;SELP.clear();render();return true}
+  if(TAB!=='home'){TAB='home';render();return true}
+  return false}
+addEventListener('DOMContentLoaded',function(){const A=NPLUG('App');
+  if(A){A.addListener('backButton',()=>{try{if(appBack())return}catch(e){console.warn(e)}A.minimizeApp().catch(()=>A.exitApp())});return}
+  // 브라우저: 기록을 하나 쌓아 두고, 뒤로 가면 앱 안에서 처리한 뒤 다시 쌓음 (홈에서 한 번 더 누르면 나감)
+  try{history.replaceState({hs:0},'');history.pushState({hs:1},'')}catch(e){}
+  addEventListener('popstate',()=>{let used=false;try{used=appBack()}catch(e){}if(used){try{history.pushState({hs:1},'')}catch(e){}}else{try{history.back()}catch(e){}}})});
