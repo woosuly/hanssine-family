@@ -10,7 +10,7 @@ actions 항목:
 - 일정 {"type":"event","date":"YYYY-MM-DD","end":"여행처럼 여러 날이면 YYYY-MM-DD","title":"","kind":"family|trip|hospital|jesa|anniv|custom","time":"HH:MM","place":"","repeat":"none|solar|lunar"}
 - 회비 내역 {"type":"tx","date":"YYYY-MM-DD","desc":"","amount":정수(지출 음수, 입금 양수),"acc":"계좌 id"}
 - 공지 {"type":"notice","text":""}
-- 앨범 사진 {"type":"photo","caption":"","tag":"손주|풍경|모임"} (첨부가 사람·풍경·모임 같은 일반 사진일 때만. 영수증·계산서·문자 캡처·문서·초대장은 절대 앨범 사진으로 만들지 않는다)
+- 앨범 사진 {"type":"photo","caption":"","tag":"손주|풍경|모임"} (첨부가 사람·풍경·모임 같은 일반 사진일 때. 영수증·계산서·문자 캡처·문서는 보통 증빙이므로 앨범으로 만들지 않고, 사용자가 '앨범·사진첩에 올려'처럼 앨범에 남기라고 할 때만 만든다)
 - 투표 {"type":"poll","q":"","opts":["",""]}
 - 모임 정산 {"type":"settle","title":"","total":정수}
 - 알림 예약 {"type":"remind","at":"YYYY-MM-DD HH:MM","text":"알릴 내용(짧게)","to":["받을 구성원 id"]} ('○시에 알려줘', '내일 아침에 ~하라고 알려줘' 같은 말. 나에게만이면 to는 [], 시각이 없으면 오전 9시)
@@ -49,7 +49,7 @@ function localIntent(t,img){const acts=[];t=t||'';
     const kind=/(병원|검진|진료|치과)/.test(t)?'hospital':/(여행|캠핑|휴가)/.test(t)?'trip':/(제사|기일|성묘)/.test(t)?'jesa':/(모임|식사|김장|생신|외식|모여)/.test(t)?'family':'custom';
     const tm=t.match(/(오전|오후)?\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분|\s*반)?/);let time='';if(tm){let h=+tm[2];if(tm[1]==='오후'&&h<12)h+=12;time=pad(h)+':'+(tm[3]?pad(+tm[3]):/반/.test(tm[0])?'30':'00')}
     acts.push({type:'event',date:ymd(date),end:end&&end>date?ymd(end):'',title:clean(t.replace(/(오전|오후)?\s*\d{1,2}\s*시(\s*\d{1,2}\s*분|\s*반)?|(~|부터)\s*(\d{1,2}\s*월\s*)?\d{1,2}\s*일(까지)?/g,''))||TYPES[kind][0],kind,time})}
-  if(img&&!/(영수증|결제|계산|금액|원\b|\d{3,})/.test(t)&&(/(사진|앨범|올려)/.test(t)||(!acts.length)))acts.push({type:'photo',caption:clean(t.replace(/(사진|앨범|올려\s*줘)/g,''))||'새 사진',tag:'모임'});
+  if(img&&(/(앨범|사진첩)/.test(t)||!/(영수증|결제|계산|금액|원\b|\d{3,})/.test(t))&&(/(사진|앨범|사진첩|올려)/.test(t)||(!acts.length)))acts.push({type:'photo',caption:clean(t.replace(/(사진|앨범|올려\s*줘)/g,''))||'새 사진',tag:'모임'});
   const found=acts.length?[]:localSearch(t);
   return {reply:acts.length?'아래 내용으로 반영할까요?':found.length?'앱에서 찾은 내용입니다.':'일정, 회비 사용, 공지, 투표, 사진 등록 문장을 이해할 수 있어요. 예: "12월 5일 김장 일정 잡아줘"',actions:acts,found}}
 function actText(a){
@@ -112,8 +112,8 @@ function botSheet(auto){botLoad();botSave();
     BOT.push({role:'user',text:t,img,fname:f&&!img?f.name:''});const m={role:'ai',text:'확인하고 있어요…',actions:[]};BOT.push(m);botSheet();
     const hist=[...BOT.filter(x=>x.role==='user'||(x.role==='ai'&&x!==m)).slice(-6).map(x=>({role:x.role==='user'?'user':'ai',text:(x.text||'')+(x.fname?` (첨부 파일: ${x.fname})`:'')||(x.img?'(사진 첨부)':'')}))];
     try{const raw=await callAI(botSys(),hist,undefined,img?await shrink(img,1600):null);let j=null;try{j=JSON.parse((raw.match(/\{[\s\S]*\}/)||[''])[0])}catch(e){}
-      if(j){m.text=j.reply||'확인했어요';m.actions=noReceiptPhoto(Array.isArray(j.actions)?j.actions:[])}else m.text=raw}
-    catch(e){const r=localIntent(t,img);m.text=r.reply;m.actions=noReceiptPhoto(r.actions);m.found=r.found;m.note='AI 연결 전이라 기본 해석으로 처리했어요'}
+      if(j){m.text=j.reply||'확인했어요';m.actions=noReceiptPhoto(Array.isArray(j.actions)?j.actions:[],t)}else m.text=raw}
+    catch(e){const r=localIntent(t,img);m.text=r.reply;m.actions=noReceiptPhoto(r.actions,t);m.found=r.found;m.note='AI 연결 전이라 기본 해석으로 처리했어요'}
     m.img=img;botSheet()};
   document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>send(b.dataset.s));
   // AI 답변 복사·공유·대화방에 보내기
@@ -160,6 +160,7 @@ async function srRemind(q){const sys=`지금 시각: ${ymd(today0())} ${String(n
   $('#ryes').onclick=()=>{const m=remAdd({at:j.at,text:j.text,to:[]});close();toast(m);speak(m);renderSenior()};
   return true}
 
-// 영수증은 사진첩이 아니라 증빙 칸(저장소)에만 보관
-function noReceiptPhoto(acts){return acts.some(a=>a.type==='tx'||a.type==='settle')?acts.filter(a=>a.type!=='photo'):acts}
+// 영수증은 기본으로 증빙 칸(저장소)에 보관
+// 목적에 따라 나눔: 회비·정산 기록이 함께 있으면 영수증은 증빙으로만. 단 '앨범·사진첩에 올려'라고 하면 앨범에도 올림
+function noReceiptPhoto(acts,t){if(/(앨범|사진첩)/.test(t||''))return acts;return acts.some(a=>a.type==='tx'||a.type==='settle')?acts.filter(a=>a.type!=='photo'):acts}
 async function keepReceipt(img,set){try{if(!MEDIA_ON())return;const u=await upMedia(await shrink(img,1280),'receipt.jpg');set(u);save()}catch(e){console.warn('receipt',e)}}
