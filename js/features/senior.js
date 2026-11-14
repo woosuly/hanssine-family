@@ -125,7 +125,7 @@ function srTalk(){
     <div class="tlog" id="tlog">${log}</div>
     ${ai&&CHAT.length?'<button class="chip" id="snew" style="align-self:flex-end">새 대화 시작</button>':''}
     ${ai?'':`${rid?'':`<div class="typing big" id="typing">${typingText()}</div>`}<div id="rbar">${replyBarHtml()}</div>`}
-    <div class="tin"><textarea id="tq" rows="2" placeholder="글로 쓰거나 '음성 입력'을 누르세요"></textarea>
+    <div class="tin"><textarea id="tq" rows="1" placeholder="여기에 쓰거나 음성 입력"></textarea>
       <div class="tbtns ${ai?'':'three'}">${ai?'':'<button class="stkbig" id="tstk">이모티콘</button>'}<button class="micbig" id="tmic">${MICSVG}음성 입력</button><button class="sendbig" id="tsend">보내기</button></div></div>`;
 }
 function bindSrTalk(){
@@ -142,7 +142,10 @@ function bindSrTalk(){
     catch(e){CHAT[CHAT.length-1]={role:'err',text:aiErr(e)};if(SR_TAB==='talk')renderSenior()}};
   $('#tsend').onclick=send;bindMsgs(box);if($('#snew'))$('#snew').onclick=()=>{CHAT=[];srAiSave();renderSenior()};bindReplyBar();
   if(CROOM)markRoomRead(CROOM);else if(SCHAT==='fam')markFamRead();
-  if(SCHAT==='fam'){$('#tq').oninput=e=>typingPing(!!e.target.value.trim());$('#tq').onblur=()=>typingPing(false)}
+  // 입력칸: 처음엔 한 줄, 쓰는 만큼 4줄까지 늘어남
+  const tq=$('#tq'),grow=()=>{tq.style.height='auto';tq.style.height=Math.min(tq.scrollHeight,tq.offsetHeight&&parseFloat(getComputedStyle(tq).lineHeight)*4+24||200)+'px'};
+  tq.addEventListener('input',grow);
+  if(SCHAT==='fam'){tq.addEventListener('input',e=>typingPing(!!e.target.value.trim()));tq.onblur=()=>typingPing(false)}
   if($('#tstk'))$('#tstk').onclick=()=>{sheet(`<h2>이모티콘 보내기</h2><p class="muted" style="font-size:.85em;margin:.2em 0 .6em">누르면 바로 가족 대화방에 보내집니다</p>
     <div class="sr-h2">움직이는 이모티콘</div><div class="actbig">${ACTS.map(a=>`<button data-act="${a[0]}"><span>${a[2]}</span><small>${a[1]}</small></button>`).join('')}</div>
     <div class="sr-h2">이모티콘</div><div class="stkbiggrid">${STK.map(x=>`<button data-stk="${x[0]}" aria-label="${x[1]}"><img src="${sticker(x[0])}" alt=""></button>`).join('')}</div>`,true);
@@ -150,7 +153,7 @@ function bindSrTalk(){
     document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{postMsg({act:b.dataset.act});close();renderSenior();playAct(b.dataset.act)});if($('#cl'))$('#cl').onclick=()=>{close();renderSenior()}};
   const mic=$('#tmic');
   mic.onclick=()=>{if(REC){stopListen();return}
-    listen(t=>{$('#tq').value=t},(st,err)=>{
+    listen(t=>{$('#tq').value=t;$('#tq').dispatchEvent(new Event('input'))},(st,err)=>{
       if(st==='listening'){mic.classList.add('on');mic.innerHTML=MICSVG+'듣는 중… 멈추기'}
       else{mic.classList.remove('on');mic.innerHTML=MICSVG+'음성 입력';if(st!=='end')toast(micMsg(st,err))}})};
 }

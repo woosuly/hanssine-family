@@ -467,7 +467,7 @@ body.senior #app{height:100%}
 /* 부모님: 기능별 색 · 보는 창 크게 · 덜 중요한 버튼 작게 */
 .senior .tseg button{padding:.35em .2em;font-size:.8em;border-width:1.5px}
 .senior .tlog{font-size:1.06em;padding:.7em}
-.senior .tin textarea{font-size:1.1em;min-height:3.4em;border:0}
+.senior .tin textarea{font-size:1.1em;min-height:2.2em;border:0;line-height:1.4;overflow-y:auto}
 .senior .tbtns button{padding:.55em .2em;font-size:.95em}
 .senior .stkbig{background:var(--sun-soft);color:var(--sun);border-color:transparent}
 .senior .micbig{background:var(--red)}
@@ -830,7 +830,7 @@ body.kbopen .tabbar{display:none}
 /* 부모님 화면: 키보드가 열리면 날짜·날씨와 아래 칸을 숨겨 입력칸·버튼이 가려지지 않게 */
 body.senior.kbopen .sr-head,body.senior.kbopen .sr-top,body.senior.kbopen .sr-bar{display:none}
 body.senior.kbopen .tlog{min-height:3em}
-body.senior.kbopen #tq{min-height:2.6em}
+body.senior.kbopen #tq{min-height:2.2em}
 /* 음성 입력 버튼: 마이크와 글자를 한 줄로, 가운데 버튼을 조금 넓게 */
 .tbtns.three{grid-template-columns:.9fr 1.3fr .85fr}
 .tbtns.three .micbig{flex-direction:row;gap:.2em}
