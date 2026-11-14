@@ -789,3 +789,6 @@ body.kbopen .tabbar{display:none}
 .sr-day{min-width:0;flex:1 1 auto}
 .sr-wx{flex:none}
 .sr-wx small{white-space:nowrap}
+/* 부모님 머리줄: 글씨를 크게 해도 날짜와 날씨가 겹치지 않게 (요일은 아랫줄로) */
+.sr-day small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sr-wx{padding:.2em .55em .2em .3em}

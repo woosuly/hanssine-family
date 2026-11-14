@@ -6,8 +6,8 @@ function renderSenior(){
   const lg=(S.log[ymd(t)]||{})[m.id]||{};const done=(lg.game?1:0)+(lg.ex?1:0);
   const body=({home:srHome,talk:srTalk,todo:srTodo,fam:srFam})[SR_TAB]();
   $('#app').innerHTML=`<div class="sr">${devBar()}
-    <div class="sr-head"><button class="sr-day" id="dd0"><b>${t.getMonth()+1}월 ${t.getDate()}일 <span>${DOW[t.getDay()]}요일</span></b>${l?`<small>음력 ${l.leap?'윤':''}${l.m}월 ${l.d}일</small>`:''}</button>
-      <button class="sr-wx" id="wx" aria-label="주간 날씨">${wxIcon(w[2],46)}<span><b class="num">${w[0]}°</b><small class="dust-${w[4]}">미세먼지 ${w[4]}</small></span></button></div>
+    <div class="sr-head"><button class="sr-day" id="dd0"><b>${t.getMonth()+1}월 ${t.getDate()}일</b><small>${DOW[t.getDay()]}요일${l?` · 음력 ${l.leap?'윤':''}${l.m}월 ${l.d}일`:''}</small></button>
+      <button class="sr-wx" id="wx" aria-label="주간 날씨">${wxIcon(w[2],36)}<span><b class="num">${w[0]}°</b><small class="dust-${w[4]}">미세먼지 ${w[4]}</small></span></button></div>
     <div class="sr-body">${body}</div>
     <nav class="sr-bar">${[['home','홈'],['talk','대화'],['todo','할 일'],['fam','가족']].map(([k,n])=>`<button data-st="${k}" class="${SR_TAB===k?'on':''}">${SICON[k]}<span>${n}</span>${k==='todo'&&done<2?'<i class="badge"></i>':''}${k==='talk'?badgeHtml():''}</button>`).join('')}</nav></div>`;
   $('#wx').onclick=weatherSheet;$('#dd0').onclick=()=>{SR_TAB='fam';renderSenior()};
