@@ -837,3 +837,12 @@ body.senior.kbopen #tq{min-height:2.2em}
 .tbtns.three .micbig svg{width:1em;height:1em;flex:none}
 /* 비어 있는 '입력 중' 줄·답장 줄은 자리 차지하지 않게 */
 .typing:empty,#rbar:empty{display:none}
+
+/* 주간 날씨: 한 날의 칸들이 같은 높이·같은 밑줄로 (글씨를 크게 해도 줄이 어긋나지 않게) */
+.wk{align-items:stretch}
+.wk>div{display:flex;flex-direction:column;justify-content:center}
+.wk>div.row{flex-direction:row;align-items:center}
+.wk .hd{justify-content:flex-end}
+.wk{grid-template-columns:2.8em minmax(0,1fr) 2.6em auto}
+.wk>div.num{white-space:nowrap}
+.wk>div.num{flex-direction:row;align-items:center;gap:.15em}

@@ -7,7 +7,7 @@ function weatherSheet(){
   sheet(`<div class="stack"><div class="row between"><h2>${esc(S.weather.loc)} 주간 날씨</h2><span class="ex">예시</span></div>
     <div class="wk"><div class="hd">날짜</div><div class="hd">날씨</div><div class="hd">비</div><div class="hd">최저/최고</div>
     ${S.weather.week.map((w,i)=>{const d=addDays(t,i);return `<div><b>${i===0?'오늘':i===1?'내일':DOW[d.getDay()]}</b><br><span class="small muted num">${d.getMonth()+1}/${d.getDate()}</span></div>
-      <div class="row" style="gap:6px;flex-wrap:nowrap">${wxIcon(w[2],30)}<span>${w[2]}<br><span class="small dust-${w[4]}">미세먼지 ${w[4]}</span></span></div><div class="num">${w[3]}%</div><div class="num"><span style="color:var(--pine)">${w[1]}°</span> / <span style="color:var(--red)">${w[0]}°</span></div>`}).join('')}</div>
+      <div class="row" style="gap:6px;flex-wrap:nowrap">${wxIcon(w[2],30)}<span style="min-width:0">${w[2]}<br><span class="small dust-${w[4]}" style="white-space:nowrap">먼지 ${w[4]}</span></span></div><div class="num">${w[3]}%</div><div class="num"><span style="color:var(--pine)">${w[1]}°</span> / <span style="color:var(--red)">${w[0]}°</span></div>`}).join('')}</div>
     <p class="small muted">실제 앱은 기상청 단기·중기예보와 에어코리아 미세먼지를 받아 옵니다. 지역은 설정에서 바꿉니다.</p></div>`,isSenior());
   if($('#cl'))$('#cl').onclick=close;
 }
