@@ -98,3 +98,12 @@ const ICON={home:'<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/><path d
 function copyText(t,msg){const ok=()=>toast(msg||'복사했어요');
   const old=()=>{try{const a=document.createElement('textarea');a.value=t;a.setAttribute('readonly','');a.style.cssText='position:fixed;top:0;left:0;opacity:0';document.body.appendChild(a);a.select();a.setSelectionRange(0,t.length);const r=document.execCommand('copy');a.remove();r?ok():toast('복사할 수 없습니다')}catch(e){toast('복사할 수 없습니다')}};
   try{if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).then(ok,old);else old()}catch(e){old()}}
+
+// 키보드가 열렸는지: 브라우저는 보이는 영역이, 앱(APK)은 화면 높이 자체가 줄어듦 → 가장 컸던 높이와 비교
+let KB_MAX={p:0,l:0};
+function kbCheck(){const vv=window.visualViewport,h=vv?vv.height:innerHeight,o=innerWidth>innerHeight*1.2&&!(vv&&vv.height<innerHeight*.8)?'l':'p';
+  const full=Math.max(innerHeight,h);if(full>KB_MAX[o])KB_MAX[o]=full;
+  const ae=document.activeElement,typing=ae&&(ae.tagName==='TEXTAREA'||(ae.tagName==='INPUT'&&!['checkbox','radio','button','file','range'].includes(ae.type)));
+  const kb=!!typing&&h<KB_MAX[o]*.78;document.body.classList.toggle('kbopen',kb);return kb}
+['resize','focusin','focusout'].forEach(ev=>addEventListener(ev,()=>setTimeout(kbCheck,ev==='focusout'?120:0)));
+if(window.visualViewport)visualViewport.addEventListener('resize',kbCheck);

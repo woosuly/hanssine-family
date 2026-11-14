@@ -826,3 +826,14 @@ body.kbopen .tabbar{display:none}
 .omok .st.last{outline:2px solid #D2452E;outline-offset:1px}
 .omok .st.win{outline:3px solid #F2C14E;outline-offset:1px}
 .blg i.bk{background:#111;border-radius:50%}.blg i.wt{background:#fff;border:1px solid #999;border-radius:50%}
+
+/* 부모님 화면: 키보드가 열리면 날짜·날씨와 아래 칸을 숨겨 입력칸·버튼이 가려지지 않게 */
+body.senior.kbopen .sr-head,body.senior.kbopen .sr-top,body.senior.kbopen .sr-bar{display:none}
+body.senior.kbopen .tlog{min-height:3em}
+body.senior.kbopen #tq{min-height:2.6em}
+/* 음성 입력 버튼: 마이크와 글자를 한 줄로, 가운데 버튼을 조금 넓게 */
+.tbtns.three{grid-template-columns:.9fr 1.3fr .85fr}
+.tbtns.three .micbig{flex-direction:row;gap:.2em}
+.tbtns.three .micbig svg{width:1em;height:1em;flex:none}
+/* 비어 있는 '입력 중' 줄·답장 줄은 자리 차지하지 않게 */
+.typing:empty,#rbar:empty{display:none}

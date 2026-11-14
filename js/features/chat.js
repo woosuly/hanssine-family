@@ -168,7 +168,7 @@ function trSendSheet(t0){let res=null;const to=pref('chatTr','en');
 
 // 대화창 높이를 화면에 맞춤: 위쪽 위치부터 아래 칸 위까지. 키보드가 올라오면 아래 칸을 숨기고 다시 맞춤
 function fitTalk(){const t=$('#talk');if(!t)return;const k=scale()||1,vv=window.visualViewport,vh=vv?vv.height:innerHeight;
-  const kb=vv?vv.height<innerHeight*.8:false;document.body.classList.toggle('kbopen',kb);
+  const kb=kbCheck();
   const tb=document.querySelector('.tabbar'),tbh=tb&&!kb?tb.getBoundingClientRect().height:0,top=t.getBoundingClientRect().top;
   t.style.height=Math.max(240,(vh-top-tbh-12)/k)+'px'}
 if(window.visualViewport)visualViewport.addEventListener('resize',()=>{if($('#talk')){fitTalk();const b=$('#clog');if(b)b.scrollTop=b.scrollHeight}});
