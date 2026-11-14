@@ -31,7 +31,7 @@ function duesView(){
     `<div class="sec" style="margin-top:12px"><div class="sec-h"><h2>내역</h2>${isT?'<button class="chip" id="addtx">내역 추가</button>':''}</div>
     <div class="hscroll">${[['','전체'],...accs().map(a=>[a.id,a.name])].map(([k,n])=>`<button class="chip ${ACCF===k?'on':''}" data-accf="${k}">${esc(n)}</button>`).join('')}${isT?'<button class="chip addchip" id="accadd">+ 계좌 추가</button>':''}</div>
     ${isT&&ACCF?'<div class="small muted">선택한 계좌를 한 번 더 누르면 이름·번호를 고칠 수 있어요</div>':''}
-    <div class="card" style="padding-block:4px;max-height:260px;overflow-y:auto">${txs.map(x=>`<div class="hh"><span><span>${esc(x.desc)}</span><br><span class="small muted num">${x.date} · ${esc(accName(x.acc))}</span></span><b class="num ${x.amt<0?'amt-m':''}">${x.amt>0?'+':''}${won(x.amt)}</b></div>`).join('')||'<span class="muted small">내역 없음</span>'}</div></div>`;
+    <div class="card" style="padding-block:4px;max-height:260px;overflow-y:auto">${txs.map(x=>`<div class="hh"><span><span>${esc(x.desc)}</span><br><span class="small muted num">${x.date} · ${esc(accName(x.acc))}</span>${x.receipt?` <button class="link small" data-txr="${x.id}">영수증</button>`:''}</span><b class="num ${x.amt<0?'amt-m':''}">${x.amt>0?'+':''}${won(x.amt)}</b></div>`).join('')||'<span class="muted small">내역 없음</span>'}</div></div>`;
 }
 function bindDues(){
   const t=today0(),ym=t.getFullYear()+'-'+pad(t.getMonth()+1);
@@ -169,3 +169,4 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-rcv]');if(
     ${x.img?`<img src="${esc(x.img)}" alt="영수증" style="width:100%;border-radius:10px">`:''}</div>`).join('')}</div>`)});
 
 const RCATS=['식비','교통비','숙박비','장보기','선물','병원·약','놀이·관람','기타'];
+document.addEventListener('click',e=>{const b=e.target.closest('[data-txr]');if(!b)return;const x=S.dues.tx.find(t=>t.id===b.dataset.txr);if(x&&x.receipt)viewFile({data:x.receipt,type:'image/jpeg',name:x.desc+' 영수증'})});
