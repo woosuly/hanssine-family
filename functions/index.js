@@ -228,3 +228,8 @@ exports.sendReminders = onSchedule({schedule: 'every 5 minutes', timeZone: 'Asia
     await doc.ref.delete().catch(() => null);
   }
 });
+
+// 설연(부부 앱)으로 일정 보내기 — feed.js
+const feed = require('./feed');
+exports.calFeedLink = feed.calFeedLink;
+exports.calFeed = feed.calFeed;

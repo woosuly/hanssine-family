@@ -40,6 +40,10 @@ function setView(){
         </div>`}).join('')}
       <div class="small muted" id="aimsg">키는 가족 공용입니다. 한 번 넣으면 등록된 가족 폰 모두가 이 키로 AI를 씁니다.</div></div></details>
     ${!LOCAL?`<details id="dvx"><summary>초대 코드 · 등록된 폰</summary><div class="in" id="dvin"><div class="small muted">불러오는 중…</div></div></details>`:''}
+    <details><summary>설연(부부 앱)으로 일정 보내기</summary><div class="in">
+      <div class="small muted">관리자 가구가 볼 수 있는 한씨네 일정과 가족 생일을 설연 달력으로 보냅니다(읽기 전용). 주소를 설연 설정 → 비서 → '한씨네 일정'에 붙여 넣으세요. 주소는 비밀번호처럼 다루세요.</div>
+      <div class="row" style="gap:6px;margin-top:8px"><button class="btn" id="feedmk">주소 만들기·복사</button><button class="btn ghost" id="feedrs">주소 바꾸기</button></div>
+      <div class="small" id="feedmsg" style="word-break:break-all;margin-top:6px"></div></div></details>
     <details><summary>관리자 PIN · 초기화</summary><div class="in">
       <div class="row" style="flex-wrap:nowrap"><div class="field" style="flex:1"><label for="npin">새 PIN</label><input id="npin" type="password" inputmode="numeric" maxlength="6"></div><button class="btn" id="pinsv" style="align-self:flex-end">변경</button></div>
       <button class="btn ghost block" id="reset">${LOCAL?'예시 데이터로 초기화':'모든 데이터 초기화'}</button></div></details>`:''}
@@ -80,6 +84,9 @@ function bindSet(){
   if($('#reset'))$('#reset').onclick=()=>{$('#reset').outerHTML='<button class="btn block" style="background:var(--red)" id="reset2">모든 입력을 지우고 초기화</button>';
     $('#reset2').onclick=()=>{if(LOCAL)S=seed();else{const ms=S.members,mst=S.master;S=cleanSeed();S.members=ms;S.master=mst}save();renderMain();toast('초기화했어요')}};
   if($('#dvx'))$('#dvx').ontoggle=()=>{if($('#dvx').open)loadDevices()};
+  const feedGo=async reset=>{const el=$('#feedmsg');el.textContent='만드는 중…';try{const t=await firebase.auth().currentUser.getIdToken();const r=await fetch('https://asia-northeast3-hanssine-family.cloudfunctions.net/calFeedLink',{method:'POST',headers:{authorization:'Bearer '+t,'content-type':'application/json'},body:JSON.stringify({reset})});const j=await r.json();if(!r.ok)throw new Error(j.error||r.status);el.textContent=j.url;try{await navigator.clipboard.writeText(j.url);toast('주소를 복사했어요')}catch(e){}}catch(e){el.textContent='실패: '+e.message+' (서버 배포가 필요할 수 있어요)'}};
+  if($('#feedmk'))$('#feedmk').onclick=()=>feedGo(false);
+  if($('#feedrs'))$('#feedrs').onclick=()=>{if(confirm('주소를 바꾸면 예전 주소는 더 이상 안 됩니다. 바꿀까요?'))feedGo(true)};
   if($('#admsel'))$('#admsel').onchange=e=>{S.master.member=e.target.value;save();toast(byLabel(mem(e.target.value))+'(을)를 관리자로 지정했어요');renderMain()};
 }
 function memberForm(id){
