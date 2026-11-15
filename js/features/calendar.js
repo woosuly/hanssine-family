@@ -74,6 +74,8 @@ function eventForm(p,after,back){
       <div class="field" style="flex:1.4"><label for="epl">장소 (선택)</label><input id="epl" value="${esc(p.place||'')}" placeholder="예: 부모님 댁"></div></div>
     <div class="field" id="escw"><label for="esc">병원 동행 담당</label><select id="esc"><option value="">정하지 않음</option>${['h1','h2','h3'].map(h=>`<option value="${h}" ${p.escort===h?'selected':''}>${HOUSES[h]}</option>`).join('')}</select></div>
     <div class="field" id="repw"><label>매년 반복</label><div class="seg" id="rep">${[['none','안 함'],['solar','양력으로'],['lunar','음력으로']].map(([k,n])=>`<button data-v="${k}" class="${(p.repeat||'none')===k?'on':''}">${n}</button>`).join('')}</div></div>
+    <div class="field" id="lunw" hidden><label>음력 날짜</label><div class="row" style="flex-wrap:nowrap;gap:6px;align-items:center"><span>음력</span><select id="elm">${[...Array(12)].map((_,i)=>`<option value="${i+1}">${i+1}월</option>`).join('')}</select><select id="eld">${[...Array(30)].map((_,i)=>`<option value="${i+1}">${i+1}일</option>`).join('')}</select></div>
+      <div class="small muted" id="lunp"></div></div>
     <div class="field"><label>미리 알림</label><div class="row">${REMINDS.map(([k,n])=>`<label class="chip"><input type="checkbox" data-rm="${k}" ${(p.remind||['d1']).includes(k)?'checked':''}> ${n}</label>`).join('')}</div></div>
     <label class="row" id="rsw"><input type="checkbox" id="ersvp" ${p.rsvp||isNew?'checked':''}> 가구별 참석 여부 받기</label>
     <div class="field"><label>표시 색</label><div class="swatches" id="ecol">${EVCOLORS.map(c=>`<button class="sw ${(p.color||TYPES[kind][1])===c?'on':''}" data-col="${c}" aria-label="색 ${c}"><i style="background:${c}"></i></button>`).join('')}</div></div>
@@ -82,22 +84,30 @@ function eventForm(p,after,back){
     <button class="btn block" id="sv">${isNew?'등록':'저장'}</button></div>`,false,back||after||null);
   let col=p.color||'';document.querySelectorAll('#ecol [data-col]').forEach(b=>b.onclick=()=>{col=b.dataset.col;document.querySelectorAll('#ecol .sw').forEach(x=>x.classList.toggle('on',x===b))});
   const ws=()=>$('#whow').hidden=$('#esco').value!=='custom';$('#esco').addEventListener('change',ws);ws();
-  let rep=p.repeat||'none';segBind('#rep',v=>rep=v);
+  let rep=p.repeat||'none';
+  // 음력 반복: 위 날짜(양력)가 아니라 음력 월·일을 직접 고름. 올해 양력 날짜를 미리 보여 줌
+  const lunInit=()=>{const l=p.repeat==='lunar'&&p.lm?{m:p.lm,d:p.ld}:S2L(parse($('#ed').value||ymd(today0())));if(l){$('#elm').value=l.m;$('#eld').value=l.d}};
+  const lunPrev=()=>{const y=today0().getFullYear(),m=+$('#elm').value,d=+$('#eld').value,s=L2S(y,m,d),s2=s<today0()?L2S(y+1,m,d):s;
+    $('#lunp').textContent=`다음은 양력 ${s2.getFullYear()!==y?s2.getFullYear()+'년 ':''}${s2.getMonth()+1}월 ${s2.getDate()}일(${DOW[s2.getDay()]})입니다`};
+  const lunShow=()=>{const on=rep==='lunar'&&!$('#repw').hidden;$('#lunw').hidden=!on;$('#ed').closest('.field').hidden=on;if(on)lunPrev()};
+  lunInit();$('#elm').onchange=$('#eld').onchange=lunPrev;
+  segBind('#rep',v=>{rep=v;if(v==='lunar')lunInit();lunShow()});
   const sync=(chg)=>{const k=$('#ety').value;$('#eendw').hidden=k!=='trip';$('#edl').textContent=k==='trip'?'첫날':'날짜';$('#escw').hidden=k!=='hospital';$('#rsw').hidden=!(k==='family'||k==='trip');
     $('#repw').hidden=k==='trip'||k==='hospital'||k==='school';
     if(chg){if(k==='hospital')$('#esco').value='adults';if(k==='jesa'){rep='lunar';document.querySelectorAll('#rep button').forEach(b=>b.classList.toggle('on',b.dataset.v==='lunar'))}
       if(k==='anniv'){rep='solar';document.querySelectorAll('#rep button').forEach(b=>b.classList.toggle('on',b.dataset.v==='solar'))}
       if(!$('#et').value||Object.values(TYPES).some(x=>x[0]===$('#et').value))$('#et').value=k==='custom'?'':TYPES[k][0];
       if(k==='custom')$('#et').focus()}};
-  $('#ety').onchange=()=>sync(true);sync(false);
+  $('#ety').onchange=()=>{sync(true);lunShow()};sync(false);lunShow();
   $('#sv').onclick=()=>{const t=$('#et').value.trim();if(!t){$('#et').focus();toast('내용을 입력해 주세요');return}
-    const k=$('#ety').value,date=$('#ed').value;let end=k==='trip'?$('#eend').value:'';if(end&&end<date){toast('마지막 날이 첫날보다 빠릅니다');return}if(end===date)end='';
+    const k=$('#ety').value,lun=rep==='lunar'&&!$('#repw').hidden,lm=+$('#elm').value,ld=+$('#eld').value;
+    const date=lun?ymd(L2S(today0().getFullYear(),lm,ld)):$('#ed').value;let end=k==='trip'?$('#eend').value:'';if(end&&end<date){toast('마지막 날이 첫날보다 빠릅니다');return}if(end===date)end='';
     const e={id:p.id||uid(),date,title:t,type:k,scope:$('#esco').value,time:$('#etm').value,place:$('#epl').value.trim(),
       escort:k==='hospital'?$('#esc').value:'',remind:[...document.querySelectorAll('[data-rm]:checked')].map(x=>x.dataset.rm),
       repeat:$('#repw').hidden?'none':rep,by:p.by||ME,color:col||undefined};
     if(e.scope==='custom'){e.who=[...document.querySelectorAll('[data-who]:checked')].map(x=>x.dataset.who);if(!e.who.length){toast('볼 사람을 골라 주세요');return}}
     if(end)e.end=end;
-    if(e.repeat==='lunar'){const l=S2L(parse(date));if(l){e.lm=l.m;e.ld=l.d}else e.repeat='solar'}
+    if(e.repeat==='lunar'){e.lm=lm;e.ld=ld}
     if(!$('#rsw').hidden&&$('#ersvp').checked)e.rsvp=p.rsvp||{};
     if(isNew)S.events.push(e);else S.events[S.events.findIndex(x=>x.id===p.id)]=e;
     save();toast(isNew?'일정을 등록했어요':'수정했어요');if(p._onSaved)p._onSaved(e);

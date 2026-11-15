@@ -7,7 +7,7 @@ function botSave(){try{localStorage.setItem('hanssine-bot-'+ME,JSON.stringify(BO
 function botSys(){return `너는 '${S.family}' 가족 앱의 AI 비서다. 사용자의 말이나 첨부 이미지(사진, 영수증, 병원 예약 문자 캡처, 초대장 등)를 보고 앱에 반영할 작업을 찾는다.
 반드시 JSON 하나만 출력한다: {"reply":"한국어 답","actions":[...]} (작업을 반영하는 경우 reply는 한 줄로 짧게, 질문·상의에 답하는 경우 reply는 아래 답하는 방식을 따른다. reply 안 줄바꿈은 \\n)
 actions 항목:
-- 일정 {"type":"event","date":"YYYY-MM-DD","end":"여행처럼 여러 날이면 YYYY-MM-DD","title":"","kind":"family|trip|hospital|jesa|anniv|custom","time":"HH:MM","place":"","repeat":"none|solar|lunar"}
+- 일정 {"type":"event","date":"YYYY-MM-DD","end":"여행처럼 여러 날이면 YYYY-MM-DD","title":"","kind":"family|trip|hospital|jesa|anniv|custom","time":"HH:MM","place":"","repeat":"none|solar|lunar","lm":음력 월,"ld":음력 일} (음력 날짜를 말하면 repeat는 lunar, lm·ld에 말한 음력 월·일을 그대로 넣는다. date는 비워도 된다)
 - 회비 내역 {"type":"tx","date":"YYYY-MM-DD","desc":"","amount":정수(지출 음수, 입금 양수),"acc":"계좌 id"}
 - 공지 {"type":"notice","text":""}
 - 앨범 사진 {"type":"photo","caption":"","tag":"손주|풍경|모임"} (첨부가 사람·풍경·모임 같은 일반 사진일 때. 영수증·계산서·문자 캡처·문서는 보통 증빙이므로 앨범으로 만들지 않고, 사용자가 '앨범·사진첩에 올려'처럼 앨범에 남기라고 할 때만 만든다)
@@ -53,6 +53,7 @@ function localIntent(t,img){const acts=[];t=t||'';
   const found=acts.length?[]:localSearch(t);
   return {reply:acts.length?'아래 내용으로 반영할까요?':found.length?'앱에서 찾은 내용입니다.':'일정, 회비 사용, 공지, 투표, 사진 등록 문장을 이해할 수 있어요. 예: "12월 5일 김장 일정 잡아줘"',actions:acts,found}}
 function actText(a){
+  if(a.type==='event'&&a.repeat==='lunar'&&+a.lm){const n=L2S(today0().getFullYear(),+a.lm,+a.ld),n2=n<today0()?L2S(today0().getFullYear()+1,+a.lm,+a.ld):n;return ['일정',`매년 음력 ${a.lm}월 ${a.ld}일 · ${a.title||''}`,`다음은 양력 ${n2.getMonth()+1}월 ${n2.getDate()}일`]}
   if(a.type==='event'){const d=parse(a.date);return ['일정',`${shortD(d)}${a.end?' ~ '+shortD(parse(a.end)):''}${a.time?' '+a.time:''} · ${a.title}`,TYPES[a.kind]?TYPES[a.kind][0]:'']}
   if(a.type==='tx')return ['회비',`${a.amount<0?'지출':'입금'} ${won(Math.abs(a.amount))} · ${a.desc}`,accName(a.acc)];
   if(a.type==='notice')return ['공지',a.text,''];
@@ -64,7 +65,7 @@ function actText(a){
 function applyAct(a,img){const r=me().role,isT=isTreas();
   if((a.type==='tx'||a.type==='settle')&&!isDaughter())return '회비는 딸들만 반영할 수 있어요';
   if(a.type==='event'){const kind=TYPES[a.kind]&&EVKINDS.includes(a.kind)?a.kind:'custom';const e={id:uid(),date:a.date,title:a.title||TYPES[kind][0],type:kind,scope:kind==='hospital'?'adults':'all',time:a.time||'',place:a.place||'',escort:'',remind:['d1'],repeat:a.repeat||(kind==='jesa'?'lunar':'none')};
-    if(a.end&&a.end>a.date)e.end=a.end;if(e.repeat==='lunar'){const l=S2L(parse(e.date));if(l){e.lm=l.m;e.ld=l.d}else e.repeat='none'}if(kind==='family'||kind==='trip')e.rsvp={};S.events.push(e);return '일정에 등록했어요'}
+    if(a.end&&a.end>a.date)e.end=a.end;if(e.repeat==='lunar'){if(+a.lm>=1&&+a.lm<=12&&+a.ld>=1&&+a.ld<=30){e.lm=+a.lm;e.ld=+a.ld;e.date=ymd(L2S(today0().getFullYear(),e.lm,e.ld))}else{const l=S2L(parse(e.date));if(l){e.lm=l.m;e.ld=l.d}else e.repeat='none'}}if(kind==='family'||kind==='trip')e.rsvp={};S.events.push(e);return '일정에 등록했어요'}
   if(a.type==='tx'){if(!isT){S.chat=S.chat||[];S.chat.push({id:uid(),by:ME,ts:Date.now(),text:`[회비 기록 요청] ${a.date} ${a.desc} ${won(a.amount)} — 총무님 확인 부탁드려요`});return `총무(${S.dues.treasurer?HOUSES[S.dues.treasurer]:'미정'})에게 기록 요청을 보냈어요`}
     const tx={id:uid(),date:a.date,desc:a.desc,amt:a.amount,acc:accs().some(x=>x.id===a.acc)?a.acc:(accs()[0]||{}).id};S.dues.tx.push(tx);
     if(img)keepReceipt(img,u=>{tx.receipt=u});return img?'회비 내역에 기록하고 영수증은 증빙으로 보관했어요':'회비 내역에 기록했어요'}
