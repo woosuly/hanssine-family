@@ -4,7 +4,7 @@
    각자 자기 판은 자기 폰에만 있고, 부른 숫자와 줄 수만 주고받음 */
 const gamesRef=()=>famRef().collection('games');
 const GBOARD={};let GUNSUB=null,GINV=null;const GSEEN=new Set();
-const bingoLv=()=>({easy:[5,3],normal:[5,5],hard:[6,6]}[lvOf('bingo')]);
+const bingoLv=()=>({easy:[5,3],normal:[6,4],hard:[7,5]}[lvOf('bingo')]);
 
 function bingoSetup(){
   const [n,goal]=bingoLv(),online=!LOCAL&&SYNC.live;
@@ -52,7 +52,7 @@ function bingoOnline(gid){if(GUNSUB){GUNSUB();GUNSUB=null}
     sheet(`<div class="bhead"><span class="turn">${over?'끝':myTurn?'내 차례':esc(opp.name)+' 차례'}</span>
         <span class="num" style="font-size:.85em">나 <b>${ln}</b>줄 · ${esc(opp.name)} <b>${(d.lines||{})[other]||0}</b>줄 · 목표 ${d.goal}줄</span></div>
       <p class="muted" style="font-size:.85em;margin:0 0 .4em">${lastN?`${lastBy===`내가`?'내가':esc(lastBy)+'님이'} ${lastN}을(를) 불렀어요. `:''}${over?'':myTurn?'부를 숫자를 누르세요':esc(opp.name)+'님 폰에서 고르는 중…'}</p>
-      <div class="bingo" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${mine.map(x=>`<button data-b="${x}" class="${called.has(x)?'mk '+(whoCalled(x)===role?'bme':'bop'):''} ${x===lastN?'last':''}" style="font-size:${n>5?1:n>4?1.15:1.5}em" ${called.has(x)||!myTurn?'disabled':''}>${x}</button>`).join('')}</div>${bLegend(opp.name)}
+      <div class="bingo" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${mine.map(x=>`<button data-b="${x}" class="${called.has(x)?'mk '+(whoCalled(x)===role?'bme':'bop'):''} ${x===lastN?'last':''}" style="font-size:${n>6?.9:n>5?1:n>4?1.15:1.5}em" ${called.has(x)||!myTurn?'disabled':''}>${x}</button>`).join('')}</div>${bLegend(opp.name)}
       <p class="muted" style="font-size:.75em;margin:.5em 0 0">상대 판은 보이지 않습니다. 뒤로 가면 대결을 그만둡니다.</p>`,true,()=>quit(d));
     document.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-b]').forEach(x=>x.disabled=true);const x=+b.dataset.b;
       firebase.firestore().runTransaction(async tx=>{const s=await tx.get(gamesRef().doc(gid));const v=s.data();

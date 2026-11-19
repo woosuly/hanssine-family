@@ -110,7 +110,7 @@ function bingo(oppName,remote){
     sheet(`<div class="bhead"><span class="turn">${over?'끝':myTurn?'내 차례':esc(oppName)+' 차례'}</span>
         <span class="num" style="font-size:.85em">나 <b>${lines(mine)}</b>줄 · ${esc(oppName)} <b>${lines(theirs)}</b>줄 · 목표 ${GOAL}줄</span></div>
       <p class="muted" style="font-size:.85em;margin:0 0 .4em">${last||(myTurn?'부를 숫자를 누르세요':'')}${!myTurn&&!over?` ${esc(oppName)}${remote?' 폰에서':'가'} 고르는 중…`:''}</p>
-      <div class="bingo" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${mine.map(x=>`<button data-b="${x}" class="${called.has(x)?'mk '+(byMe.has(x)?'bme':'bop'):''} ${x===lastN?'last':''}" style="font-size:${n>5?1:n>4?1.15:1.5}em" ${called.has(x)||over||!myTurn?'disabled':''}>${x}</button>`).join('')}</div>
+      <div class="bingo" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${mine.map(x=>`<button data-b="${x}" class="${called.has(x)?'mk '+(byMe.has(x)?'bme':'bop'):''} ${x===lastN?'last':''}" style="font-size:${n>6?.9:n>5?1:n>4?1.15:1.5}em" ${called.has(x)||over||!myTurn?'disabled':''}>${x}</button>`).join('')}</div>
       ${bLegend(oppName)}`,true,()=>{over=true;bingoSetup()});
     document.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>call(+b.dataset.b,true));
   };
@@ -135,18 +135,19 @@ const PUZZLES={
   hard:[{w:7,h:8,words:[{a:'무궁화',r:0,c:0,d:'a',q:'우리나라 꽃'},{a:'화요일',r:0,c:2,d:'d',q:'월요일 다음 날'},{a:'일기장',r:2,c:2,d:'a',q:'하루 있었던 일을 적는 공책'},{a:'장독대',r:2,c:4,d:'d',q:'장독을 올려놓는 곳'},
     {a:'대나무',r:4,c:4,d:'a',q:'마디가 있고 곧게 자라며 죽순이 나는 나무'},{a:'무지개',r:4,c:6,d:'d',q:'비 갠 뒤 하늘에 뜨는 일곱 빛깔 띠'},{a:'지우개',r:6,c:4,d:'a',q:'연필 글씨를 지우는 물건'},{a:'우산',r:6,c:5,d:'d',q:'비 올 때 펴서 쓰는 것'}]}]};
 function crossword(){
-  // 쉬움: 힌트 3번, 보통: 1번, 어려움: 힌트 없음 (예전 '어려움'보다 어렵게)
-  const lvl=lvOf('cross'),set=[...PUZZLES.normal,...PUZZLES.hard],P=JSON.parse(JSON.stringify(set[Math.floor(today0()/864e5)%set.length]));const HMAX={easy:3,normal:1,hard:0}[lvl];const t0=performance.now();
+  // 쉬움 = 예전 '어려움'(8낱말·힌트 2번), 보통 12낱말·힌트 1번, 어려움 16낱말·힌트 없음 — 판은 할 때마다 새로 만듦
+  const lvl=lvOf('cross'),[NW,MW,HMAX]={easy:[8,9,2],normal:[12,11,1],hard:[16,13,0]}[lvl],P=cwGen(NW,MW,MW);const t0=performance.now();
   const cells={};P.words.forEach((w,wi)=>[...w.a].forEach((ch,k)=>{const r=w.r+(w.d==='d'?k:0),c=w.c+(w.d==='a'?k:0),key=r+','+c;
     cells[key]=cells[key]||{ch,ws:[],show:false,hint:false};cells[key].ws.push(wi)}));
   const num={};let n=1;P.words.forEach(w=>{const k=w.r+','+w.c;if(!num[k])num[k]=n++;w.n=num[k]});
-  const solved=new Set();let sel=0,hints=0;const cs=P.w>5?1.7:2.1;
+  const solved=new Set();let sel=0,hints=0;
+  const px=Math.max(20,Math.min(34,Math.floor((Math.min(innerWidth,520)-44-3*(P.w-1))/P.w))),cs=`${px}px;font-size:${Math.round(px*.55)}px`;
   const cellsOf=w=>[...w.a].map((_,k)=>(w.r+(w.d==='d'?k:0))+','+(w.c+(w.d==='a'?k:0)));
   const draw=(msg)=>{const w=P.words[sel];const selCells=new Set(cellsOf(w));
     let g='';for(let r=0;r<P.h;r++)for(let c=0;c<P.w;c++){const k=r+','+c,x=cells[k];
-      g+=x?`<i class="c ${selCells.has(k)?'sel':''} ${x.hint&&!x.done?'h':''}" data-k="${k}" style="width:${cs}em;height:${cs}em">${num[k]?`<sup>${num[k]}</sup>`:''}${x.show?x.ch:''}</i>`:`<i style="width:${cs}em;height:${cs}em"></i>`}
+      g+=x?`<i class="c ${selCells.has(k)?'sel':''} ${x.hint&&!x.done?'h':''}" data-k="${k}" style="width:${cs};height:${px}px">${num[k]?`<sup>${num[k]}</sup>`:''}${x.show?x.ch:''}</i>`:`<i style="width:${px}px;height:${px}px"></i>`}
     sheet(`${lvBar('cross')}<div class="bhead"><h2>낱말 가로세로</h2><span class="small muted num">${solved.size} / ${P.words.length}</span></div>
-      <div class="cw" style="grid-template-columns:repeat(${P.w},${cs}em)">${g}</div>
+      <div style="overflow-x:auto"><div class="cw" style="grid-template-columns:repeat(${P.w},${px}px)">${g}</div></div>
       <div class="card" style="margin-top:.6em;padding:.6em .7em"><b>${w.n}번 ${w.d==='a'?'가로':'세로'} (${w.a.length}글자)</b><div style="font-size:.95em">${esc(w.q)}</div>
         ${solved.has(sel)?'<div style="color:var(--pine);font-weight:700;margin-top:.3em">맞혔어요</div>':`<div class="cwin"><input id="cin" maxlength="${w.a.length+2}" placeholder="정답 입력" autocomplete="off">
           <button id="cmic" class="micbtn" aria-label="음성 입력">음성</button><button id="cok" class="btn">확인</button></div>

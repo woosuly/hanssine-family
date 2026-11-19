@@ -926,3 +926,4 @@ select.rccat.need{color:var(--sun);border-color:var(--sun)}
 .mghand{display:flex;flex-wrap:wrap;gap:.3em;justify-content:center;margin-top:.3em}
 .mghand .hw{cursor:pointer;font-size:1.08em}
 .mghand.wait .hw{opacity:.6}
+.pgb .pc.hint{outline:3px solid var(--sun);animation:hwpk .5s infinite alternate}
