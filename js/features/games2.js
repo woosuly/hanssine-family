@@ -4,7 +4,7 @@
    각자 자기 판은 자기 폰에만 있고, 부른 숫자와 줄 수만 주고받음 */
 const gamesRef=()=>famRef().collection('games');
 const GBOARD={};let GUNSUB=null,GINV=null;const GSEEN=new Set();
-const bingoLv=()=>({easy:[3,1],normal:[4,2],hard:[5,3]}[lvOf('bingo')]);
+const bingoLv=()=>({easy:[5,3],normal:[5,5],hard:[6,6]}[lvOf('bingo')]);
 
 function bingoSetup(){
   const [n,goal]=bingoLv(),online=!LOCAL&&SYNC.live;
@@ -52,13 +52,13 @@ function bingoOnline(gid){if(GUNSUB){GUNSUB();GUNSUB=null}
     sheet(`<div class="bhead"><span class="turn">${over?'끝':myTurn?'내 차례':esc(opp.name)+' 차례'}</span>
         <span class="num" style="font-size:.85em">나 <b>${ln}</b>줄 · ${esc(opp.name)} <b>${(d.lines||{})[other]||0}</b>줄 · 목표 ${d.goal}줄</span></div>
       <p class="muted" style="font-size:.85em;margin:0 0 .4em">${lastN?`${lastBy===`내가`?'내가':esc(lastBy)+'님이'} ${lastN}을(를) 불렀어요. `:''}${over?'':myTurn?'부를 숫자를 누르세요':esc(opp.name)+'님 폰에서 고르는 중…'}</p>
-      <div class="bingo" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${mine.map(x=>`<button data-b="${x}" class="${called.has(x)?'mk '+(whoCalled(x)===role?'bme':'bop'):''} ${x===lastN?'last':''}" style="font-size:${n>4?1.15:1.5}em" ${called.has(x)||!myTurn?'disabled':''}>${x}</button>`).join('')}</div>${bLegend(opp.name)}
+      <div class="bingo" style="grid-template-columns:repeat(${n},minmax(0,1fr))">${mine.map(x=>`<button data-b="${x}" class="${called.has(x)?'mk '+(whoCalled(x)===role?'bme':'bop'):''} ${x===lastN?'last':''}" style="font-size:${n>5?1:n>4?1.15:1.5}em" ${called.has(x)||!myTurn?'disabled':''}>${x}</button>`).join('')}</div>${bLegend(opp.name)}
       <p class="muted" style="font-size:.75em;margin:.5em 0 0">상대 판은 보이지 않습니다. 뒤로 가면 대결을 그만둡니다.</p>`,true,()=>quit(d));
     document.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-b]').forEach(x=>x.disabled=true);const x=+b.dataset.b;
       firebase.firestore().runTransaction(async tx=>{const s=await tx.get(gamesRef().doc(gid));const v=s.data();
         if(v.status!=='play'||v.turn!==role||(v.called||[]).includes(x))return;
         tx.update(gamesRef().doc(gid),{called:[...(v.called||[]),x],turn:other,ts:Date.now()})}).catch(e=>{console.warn(e);toast('보내지 못했어요')})});
-    if(over){done=true;stop();const w=d.winner;markLog('game',true);
+    if(over){done=true;stop();const w=d.winner;markLog('game',true);if(w===role)recPut('bingo',1);
       const t=w==='draw'?'비겼어요':w===role?'빙고! 이겼어요':`${opp.name} 빙고`;
       setTimeout(()=>resultView(t,[`나 ${ln}줄 · ${esc(opp.name)} ${(d.lines||{})[other]||0}줄`,`부른 숫자 <b class="num">${called.size}개</b>`,partLine()],'bingo',bingoSetup),1300)}
   },e=>{console.warn('game',e);toast('대결 정보를 받지 못했어요')});
@@ -80,7 +80,7 @@ async function gameFromPush(id){try{const s=await gamesRef().doc(id).get();const
 
 // ── 지뢰찾기 ──
 function gameMines(){
-  const [W,H,M]={easy:[8,8,8],normal:[9,11,15],hard:[10,13,24]}[lvOf('mines')];
+  const [W,H,M]={easy:[10,13,24],normal:[10,14,32],hard:[11,16,45]}[lvOf('mines')];
   let cells=null,flagMode=false,over=false,t0=0,open=0;
   const nb=i=>{const x=i%W,y=Math.floor(i/W),o=[];for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const a=x+dx,b=y+dy;if(a>=0&&a<W&&b>=0&&b<H)o.push(b*W+a)}return o};
   const lay=first=>{const safe=new Set([first,...nb(first)]);const idx=[...Array(W*H).keys()].filter(i=>!safe.has(i)).sort(()=>Math.random()-.5).slice(0,M);
@@ -108,8 +108,8 @@ function gameMines(){
     if(hit){over=true;cells.forEach(x=>{if(x.m)x.o=true});draw();markLog('game',true);
       setTimeout(()=>resultView('아쉬워요, 지뢰를 밟았어요',[`연 칸 <b class="num">${cells.filter(x=>x.o&&!x.m).length}</b> / ${W*H-M}`,partLine()],'mines',gameMines),1100);return}
     if(cells.filter(x=>x.o&&!x.m).length===W*H-M){over=true;cells.forEach(x=>{if(x.m)x.f=true});draw();markLog('game',true);
-      const sec=Math.round((performance.now()-t0)/1000),key='mb_'+lvOf('mines'),best=pref(key,0);if(!best||sec<best)setPref(key,sec);
-      setTimeout(()=>resultView('모두 찾았어요',[`걸린 시간 <b class="num">${sec}초</b>`,best&&sec>=best?`최고 기록 ${best}초`:'최고 기록이에요',partLine()],'mines',gameMines),700);return}
+      const sec=Math.round((performance.now()-t0)/1000);
+      setTimeout(()=>resultView('모두 찾았어요',[`걸린 시간 <b class="num">${fmtRec('time',sec)}</b>`,recLine('mines',sec),partLine()],'mines',gameMines),700);return}
     draw()};
   draw();
 }
@@ -117,9 +117,10 @@ function gameMines(){
 // ── 프리셀 ──
 function gameFreecell(){
   const SU=['♠','♥','♦','♣'],RK=['','A','2','3','4','5','6','7','8','9','10','J','Q','K'],red=c=>c.s===1||c.s===2;
-  let cols,free,found,sel=null,hist=[],moves=0;
-  const deal=()=>{const d=[];for(let s=0;s<4;s++)for(let r=1;r<=13;r++)d.push({r,s});d.sort(()=>Math.random()-.5);
-    cols=[[],[],[],[],[],[],[],[]];d.forEach((c,i)=>cols[i%8].push(c));free=[null,null,null,null];found=[0,0,0,0];sel=null;hist=[];moves=0};
+  const FC={easy:4,normal:3,hard:2}[lvOf('freecell')];
+  let cols,free,found,sel=null,hist=[],moves=0,t0=0;
+  const deal=()=>{t0=0;const d=[];for(let s=0;s<4;s++)for(let r=1;r<=13;r++)d.push({r,s});d.sort(()=>Math.random()-.5);
+    cols=[[],[],[],[],[],[],[],[]];d.forEach((c,i)=>cols[i%8].push(c));free=Array(FC).fill(null);found=[0,0,0,0];sel=null;hist=[];moves=0};
   const snap=()=>hist.push(JSON.stringify({cols,free,found,moves}));
   const runLen=col=>{let n=1;for(let i=col.length-1;i>0;i--){const a=col[i-1],b=col[i];if(a.r===b.r+1&&red(a)!==red(b))n++;else break}return col.length?n:0};
   const cap=toEmpty=>{const ef=free.filter(x=>!x).length,ec=cols.filter(c=>!c.length).length-(toEmpty?1:0);return (ef+1)*Math.pow(2,Math.max(0,ec))};
@@ -128,16 +129,17 @@ function gameFreecell(){
   const auto=()=>{let mv=true;while(mv){mv=false;
     const safe=c=>c.r<=2||(red(c)?Math.min(found[0],found[3]):Math.min(found[1],found[2]))>=c.r-1;
     for(const col of cols){const c=col.at(-1);if(c&&toFound(c)&&safe(c)){found[c.s]=c.r;col.pop();mv=true}}
-    for(let i=0;i<4;i++){const c=free[i];if(c&&toFound(c)&&safe(c)){found[c.s]=c.r;free[i]=null;mv=true}}}};
+    for(let i=0;i<FC;i++){const c=free[i];if(c&&toFound(c)&&safe(c)){found[c.s]=c.r;free[i]=null;mv=true}}}};
   const cardHtml=(c,attr,cls='')=>`<div class="pcard ${red(c)?'red':''} ${cls}" ${attr}><b>${RK[c.r]}</b><i>${SU[c.s]}</i></div>`;
   const draw=()=>{
     const isSel=(k,i,j)=>sel&&sel.k===k&&sel.i===i&&(k!=='c'||j>=cols[i].length-sel.n);
-    sheet(`<div class="bhead"><span class="turn">프리셀</span><span class="num" style="font-size:.85em">이동 ${moves}</span></div>
+    sheet(`${lvBar('freecell')}<div class="bhead" style="margin-top:.4em"><span class="turn">프리셀 · 빈칸 ${FC}개</span><span class="num" style="font-size:.85em">이동 ${moves}</span></div>
       <div class="fctop"><div class="fcrow">${free.map((c,i)=>`<div class="fslot" data-fr="${i}">${c?cardHtml(c,`data-fr="${i}"`,isSel('f',i)?'sel':''):''}</div>`).join('')}</div>
         <div class="fcrow">${found.map((r,s)=>`<div class="fslot fnd" data-fd="${s}">${r?cardHtml({r,s},`data-fd="${s}"`):`<span class="${s===1||s===2?'red':''}">${SU[s]}</span>`}</div>`).join('')}</div></div>
       <div class="fccols">${cols.map((col,i)=>`<div class="fccol" data-col="${i}">${col.map((c,j)=>cardHtml(c,`data-col="${i}" data-j="${j}"`,isSel('c',i,j)?'sel':'')).join('')}</div>`).join('')}</div>
       <div class="actions" style="margin-top:.6em"><button class="btn ghost" id="fcu" ${hist.length?'':'disabled'}>되돌리기</button><button class="btn ghost" id="fcn">새 판</button></div>
       <p class="muted" style="font-size:.78em;margin:.3em 0 0">카드를 누른 뒤 옮길 곳을 누르세요. 같은 카드를 한 번 더 누르면 위쪽 칸으로 올라갑니다.</p>`,true,gameMenu);
+    bindLv('freecell',gameFreecell);
     $('#fcu').onclick=()=>{const h=JSON.parse(hist.pop());cols=h.cols;free=h.free;found=h.found;moves=h.moves;sel=null;draw()};
     $('#fcn').onclick=()=>{deal();draw()};
     document.querySelectorAll('[data-col]').forEach(el=>el.onclick=e=>{e.stopPropagation();const i=+el.dataset.col,j=el.dataset.j===undefined?null:+el.dataset.j;tapCol(i,j)});
@@ -146,9 +148,9 @@ function gameFreecell(){
   };
   const take=()=>sel.k==='f'?[free[sel.i]]:cols[sel.i].slice(cols[sel.i].length-sel.n);
   const drop=()=>{if(sel.k==='f')free[sel.i]=null;else cols[sel.i].splice(cols[sel.i].length-sel.n)};
-  const done=()=>{moves++;sel=null;auto();draw();
-    if(found.every(r=>r===13)){markLog('game',true);const key='fcb',best=pref(key,0);if(!best||moves<best)setPref(key,moves);
-      setTimeout(()=>resultView('다 올렸어요',[`이동 <b class="num">${moves}번</b>`,best&&moves>=best?`최고 기록 ${best}번`:'최고 기록이에요',partLine()],null,gameFreecell),500)}};
+  const done=()=>{if(!t0)t0=performance.now();moves++;sel=null;auto();draw();
+    if(found.every(r=>r===13)){markLog('game',true);const sec=Math.round((performance.now()-t0)/1000);
+      setTimeout(()=>resultView('다 올렸어요',[`걸린 시간 <b class="num">${fmtRec('time',sec)}</b> · 이동 ${moves}번`,recLine('freecell',sec),partLine()],'freecell',gameFreecell),500)}};
   const quick=()=>{const cs=take();if(cs.length===1&&toFound(cs[0])){snap();drop();found[cs[0].s]=cs[0].r;return done()}
     if(sel.k==='c'&&cs.length===1){const fi=free.findIndex(x=>!x);if(fi>=0){snap();drop();free[fi]=cs[0];return done()}}
     sel=null;draw()};
@@ -180,9 +182,9 @@ function game2048(){
       while(o.length<4)o.push(0);ix.forEach((i,k)=>{if(g[i]!==o[k])moved=true;g[i]=o[k]})});
     if(!moved)return;add();
     const can=g.includes(0)||g.some((v,i)=>(i%4<3&&v===g[i+1])||(i<12&&v===g[i+4]));
-    draw();if(!can){over=true;markLog('game',true);const best=pref('b2048',0);if(score>best)setPref('b2048',score);
-      setTimeout(()=>resultView('더 움직일 수 없어요',[`점수 <b class="num">${score}</b> · 가장 큰 수 ${Math.max(...g)}`,score>best?'최고 점수예요':`최고 점수 ${best}`,partLine()],null,game2048),700)}};
-  const draw=()=>{sheet(`<div class="bhead"><span class="turn">2048</span><span class="num" style="font-size:.85em">점수 ${score} · 최고 ${pref('b2048',0)}</span></div>
+    draw();if(!can){over=true;markLog('game',true);
+      setTimeout(()=>resultView('더 움직일 수 없어요',[`점수 <b class="num">${score}점</b> · 가장 큰 수 ${Math.max(...g)}`,recLine('g2048',score),partLine()],'g2048',game2048),700)}};
+  const draw=()=>{const my=recMine('g2048');sheet(`<div class="bhead"><span class="turn">2048</span><span class="num" style="font-size:.85em">점수 ${score}${my!=null?` · 내 최고 ${my}`:''}</span></div>
       <div class="g48" id="g48">${g.map(v=>`<div class="t t${Math.min(v,4096)}">${v||''}</div>`).join('')}</div>
       <div class="g48k"><span></span><button data-d="u" aria-label="위">▲</button><span></span><button data-d="l" aria-label="왼쪽">◀</button><button data-d="d" aria-label="아래">▼</button><button data-d="r" aria-label="오른쪽">▶</button></div>
       <p class="muted" style="font-size:.78em;margin:.3em 0 0">판을 밀거나 화살표를 누르세요. 같은 숫자가 만나면 합쳐집니다.</p>`,true,gameMenu);
@@ -204,15 +206,21 @@ function omWin(st,i,n){const x=i%n,y=Math.floor(i/n),c=st[i];if(!c)return null;
 const omStones=(moves,n)=>{const st=Array(n*n).fill(0);moves.forEach((m,k)=>st[m]=k%2===0?1:2);return st};
 // 컴퓨터: 빈칸마다 '내가 두면'·'상대가 두면' 이어지는 정도를 점수로 매겨 가장 좋은 칸
 function omAI(st,n,me,lv){const op=me===1?2:1,cand=[];
+  // 쉬움 = 예전 '어려움' 수준, 보통 = 겹치는 공격(3·3, 4·3)까지 봄, 어려움 = 상대의 다음 수까지 내다봄
   const near=i=>{const x=i%n,y=Math.floor(i/n);for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const a=x+dx,b=y+dy;if(a>=0&&b>=0&&a<n&&b<n&&st[b*n+a])return true}return false};
-  const score=(i,c)=>{const x=i%n,y=Math.floor(i/n);let s=0;
+  const score=(i,c)=>{const x=i%n,y=Math.floor(i/n);let s=0,big=0;
     for(const [dx,dy] of [[1,0],[0,1],[1,1],[1,-1]]){let cnt=1,open=0;
       for(const sg of [1,-1]){let k=1;while(true){const a=x+dx*k*sg,b=y+dy*k*sg;if(a<0||b<0||a>=n||b>=n)break;const v=st[b*n+a];if(v===c){cnt++;k++;continue}if(!v)open++;break}}
-      s+=cnt>=5?1e6:cnt===4?(open===2?1e5:open?1e4:0):cnt===3?(open===2?5e3:open?400:0):cnt===2?(open===2?200:open?30:0):open?5:0}return s};
-  st.forEach((v,i)=>{if(v||!near(i))return;const a=score(i,me),d=score(i,op);cand.push([i,Math.max(a*1.1,d*(lv==='easy'?0.6:1))+Math.random()])});
+      const v=cnt>=5?1e6:cnt===4?(open===2?1e5:open?1e4:0):cnt===3?(open===2?5e3:open?400:0):cnt===2?(open===2?200:open?30:0):open?5:0;s+=v;
+      if(v>=4e2&&lv!=='easy')big++}
+    if(big>=2)s+=s<1e4?3e4:5e4;return s};
+  st.forEach((v,i)=>{if(v||!near(i))return;const a=score(i,me),d=score(i,op);cand.push([i,Math.max(a*1.1,d)+a*.15+d*.1+Math.random()])});
   if(!cand.length)return Math.floor(n*n/2);
-  cand.sort((p,q)=>q[1]-p[1]);const top=lv==='easy'?cand.slice(0,4):lv==='normal'?cand.slice(0,2):cand.slice(0,1);
-  return top[Math.floor(Math.random()*top.length)][0]}
+  cand.sort((p,q)=>q[1]-p[1]);
+  if(lv==='hard'&&cand[0][1]<1e6){// 상위 후보마다 둔 뒤 상대가 가장 좋게 받는 수를 빼서 비교
+    const best=cand.slice(0,8).map(([i,v])=>{st[i]=me;let r=0;st.forEach((w,j)=>{if(!w&&near(j))r=Math.max(r,score(j,op))});st[i]=0;return [i,v-r*.8]});
+    best.sort((p,q)=>q[1]-p[1]);return best[0][0]}
+  return cand[0][0]}
 function omBoard(st,n,o){const last=o.last,line=new Set(o.line||[]);
   return `<div class="omok" style="--n:${n}">${st.map((v,i)=>`<button data-om="${i}" ${v||o.lock?'disabled':''} aria-label="${i%n+1}열 ${Math.floor(i/n)+1}줄">${v?`<i class="st ${v===1?'bk':'wt'} ${i===last?'last':''} ${line.has(i)?'win':''}"></i>`:''}</button>`).join('')}</div>`}
 function gameOmok(){const online=!LOCAL&&SYNC.live,opp=S.members.filter(x=>x.id!==ME);
@@ -255,6 +263,6 @@ function omokOnline(gid){if(GUNSUB){GUNSUB();GUNSUB=null}let ended=false;
         if(v.status!=='play'||v.turn!==role||mv.includes(i))return;const nm=[...mv,i],w=omWin(omStones(nm,n),i,n);
         tx.update(gamesRef().doc(gid),w?{moves:nm,status:'over',winner:role,line:w,ts:Date.now()}:nm.length>=n*n?{moves:nm,status:'over',winner:'draw',ts:Date.now()}:{moves:nm,turn:other,ts:Date.now()})})
         .catch(e=>{console.warn(e);toast('두지 못했어요')})});
-    if(over){ended=true;stop();markLog('game',true);const w=d.winner;
+    if(over){ended=true;stop();markLog('game',true);const w=d.winner;if(w===role)recPut('omok',1);
       setTimeout(()=>resultView(w==='draw'?'비겼어요':w===role?'오목! 이겼어요':`${opp.name} 승리`,[`${moves.length}수`,partLine()],null,gameOmok),1500)}
   },e=>{console.warn('omok',e);toast('대결 정보를 받지 못했어요')})}

@@ -4,7 +4,7 @@
    families/hanssine/items/{키}~{id}   : 목록 데이터 한 건씩 (구성원·사진·일정·공지·정산·대화)
    families/hanssine/devices/{uid}     : 등록된 폰
    families/hanssine/private/invite    : 초대 코드 (관리자만 읽기) */
-const FAM='hanssine',COLL_KEYS=['members','photos','events','notices','settles','chat'],LOCAL_KEYS=['trPacks'],QUIET_KEYS=['seen','prefs'];
+const FAM='hanssine',COLL_KEYS=['members','photos','events','notices','settles','chat'],LOCAL_KEYS=['trPacks'],QUIET_KEYS=['seen','prefs','grec'];
 const SYNC={cache:{},obj:{},objJ:{},order:{},queued:false,live:false,booted:false,pend:false,gotS:false,gotI:false,uid:null,dev:null,unsub:[]};
 let DB=null;
 const famRef=()=>DB.collection('families').doc(FAM);

@@ -875,3 +875,54 @@ select.rccat.need{color:var(--sun);border-color:var(--sun)}
 .pvbot .av{flex:none}
 .pvcap{margin-top:2px;font-size:14px;opacity:.95}
 .pvlast{border:0;background:none;color:#fff;text-align:left;padding:4px 0 0;font-size:13px;opacity:.9}
+
+/* 기록 순위 */
+.rkg{display:flex;flex-wrap:wrap;gap:.35em;margin-top:.6em}
+.rkg button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:.35em .75em;font-size:.85em}
+.rkg button.on{background:var(--pine);color:var(--pine-ink);border-color:var(--pine)}
+.rk{display:flex;flex-direction:column;gap:.35em}
+.rkr{display:flex;align-items:center;gap:.6em;padding:.5em .7em;border:1px solid var(--line);border-radius:.7em;background:var(--surface)}
+.rkr>b{width:1.6em;text-align:center;font-size:1.1em}
+.rkr .av{width:2em;height:2em;flex:none}
+.rkr span{flex:1;min-width:0}
+.rkr em{font-style:normal;font-weight:700}
+.rkr.me{border-color:var(--pine);background:var(--pine-soft)}
+.rkr:first-child>b{color:var(--sun)}
+/* 애니팡 */
+.pgbar{height:.5em;border-radius:999px;background:var(--line);overflow:hidden;margin:.2em 0 .5em}
+.pgbar i{display:block;height:100%;width:100%;background:var(--pine);transition:width 1s linear}
+.pgbar i.low{background:#d9534f}
+.pgc{color:var(--sun);font-weight:700;font-size:.85em;margin-left:.3em}
+.pgb{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;touch-action:none;user-select:none;-webkit-user-select:none;background:var(--pine-soft);padding:4px;border-radius:.8em}
+.pgb .pc{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:1.65em;background:var(--surface);border-radius:.45em;transition:transform .15s}
+.pgb .pc.sel{outline:3px solid var(--pine);transform:scale(.92)}
+.pgb .pc.pop{transform:scale(1.25);opacity:.25;transition:transform .25s,opacity .25s}
+/* 맞고 (화투패는 테마와 관계없이 종이색) */
+.hw{width:2.5em;height:3.7em;border-radius:.3em;background:#fff6e6;border:1px solid #b9a17c;color:#3a2a1a;display:inline-flex;flex-direction:column;align-items:center;justify-content:space-between;padding:.15em 0;box-sizing:border-box;flex:none;font-size:1em;line-height:1}
+.hw b{font-size:.8em;color:#8a2a1a}
+.hw i{font-style:normal;font-size:1.15em}
+.hw i em{font-style:normal;display:inline-flex;width:1.3em;height:1.3em;border-radius:50%;background:#c8281e;color:#fff;font-size:.75em;align-items:center;justify-content:center;font-weight:700}
+.hw s{text-decoration:none;font-size:.58em;font-weight:700}
+.hw.g{background:#fff0d6;border-color:#c8281e}
+.hw.pp s{color:#7a3fbf}
+.hw .rb{display:block;width:.55em;height:1.4em;border-radius:.1em;background:#c8281e}
+.hw .rb.cheong{background:#2453a6}.hw .rb.bi{background:#999}
+.hw.back{background:#a8321f;border-color:#7b1f12;color:#fff;justify-content:center}
+.hw.back b{color:#fff;font-size:.9em}
+.hw.nw{box-shadow:0 0 0 3px var(--sun)}
+.hw.pk{box-shadow:0 0 0 3px var(--pine);cursor:pointer;animation:hwpk 1s infinite alternate}
+@keyframes hwpk{to{transform:translateY(-3px)}}
+.hw.mt{box-shadow:0 0 0 2px var(--pine)}
+.hw.mini{width:1.45em;height:2.1em;font-size:.62em;padding:0;margin-left:-.55em}
+.hw.mini:first-child{margin-left:0}
+.hw.mini s{display:none}
+.mgbar{display:flex;justify-content:space-between;align-items:center;font-size:.85em;margin:.35em 0 .15em}
+.mgcap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.3em}
+.mgcap .cg{background:var(--pine-soft);border-radius:.5em;padding:.2em .3em;min-height:2.4em;min-width:0;overflow:hidden}
+.mgcap .cg>span{font-size:.7em;color:var(--muted);display:block}
+.mgcap .cg>div{display:flex;flex-wrap:wrap;row-gap:2px}
+.mgfloor{display:flex;flex-wrap:wrap;gap:.3em;justify-content:center;padding:.5em;margin:.4em 0;border-radius:.8em;background:#2f6b45;min-height:4.5em;align-items:center}
+.mgmsg{text-align:center;font-size:.85em;margin:.2em 0;min-height:1.3em}
+.mghand{display:flex;flex-wrap:wrap;gap:.3em;justify-content:center;margin-top:.3em}
+.mghand .hw{cursor:pointer;font-size:1.08em}
+.mghand.wait .hw{opacity:.6}
