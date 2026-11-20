@@ -897,33 +897,29 @@ select.rccat.need{color:var(--sun);border-color:var(--sun)}
 .pgb .pc{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:1.65em;background:var(--surface);border-radius:.45em;transition:transform .15s}
 .pgb .pc.sel{outline:3px solid var(--pine);transform:scale(.92)}
 .pgb .pc.pop{transform:scale(1.25);opacity:.25;transition:transform .25s,opacity .25s}
-/* 맞고 (화투패는 테마와 관계없이 종이색) */
-.hw{width:2.5em;height:3.7em;border-radius:.3em;background:#fff6e6;border:1px solid #b9a17c;color:#3a2a1a;display:inline-flex;flex-direction:column;align-items:center;justify-content:space-between;padding:.15em 0;box-sizing:border-box;flex:none;font-size:1em;line-height:1}
-.hw b{font-size:.8em;color:#8a2a1a}
-.hw i{font-style:normal;font-size:1.15em}
-.hw i em{font-style:normal;display:inline-flex;width:1.3em;height:1.3em;border-radius:50%;background:#c8281e;color:#fff;font-size:.75em;align-items:center;justify-content:center;font-weight:700}
-.hw s{text-decoration:none;font-size:.58em;font-weight:700}
-.hw.g{background:#fff0d6;border-color:#c8281e}
-.hw.pp s{color:#7a3fbf}
-.hw .rb{display:block;width:.55em;height:1.4em;border-radius:.1em;background:#c8281e}
-.hw .rb.cheong{background:#2453a6}.hw .rb.bi{background:#999}
-.hw.back{background:#a8321f;border-color:#7b1f12;color:#fff;justify-content:center}
-.hw.back b{color:#fff;font-size:.9em}
-.hw.nw{box-shadow:0 0 0 3px var(--sun)}
-.hw.pk{box-shadow:0 0 0 3px var(--pine);cursor:pointer;animation:hwpk 1s infinite alternate}
-@keyframes hwpk{to{transform:translateY(-3px)}}
-.hw.mt{box-shadow:0 0 0 2px var(--pine)}
-.hw.mini{width:1.45em;height:2.1em;font-size:.62em;padding:0;margin-left:-.55em}
-.hw.mini:first-child{margin-left:0}
-.hw.mini s{display:none}
+/* 맞고 (화투패 그림: 전통 화투 문양, img/hw/{0~47}.webp) */
+.hw{width:3.6em;aspect-ratio:200/308;border-radius:.3em;background:#c8281e center/cover no-repeat;box-shadow:0 1px 3px rgba(0,0,0,.35);position:relative;flex:none;box-sizing:border-box}
+.hw em{position:absolute;top:.15em;left:.15em;font-style:normal;display:flex;width:1.35em;height:1.35em;border-radius:50%;background:#c8281e;color:#fff;font-size:.7em;align-items:center;justify-content:center;font-weight:700;border:1px solid #fff}
+.hw em.pp{width:auto;height:auto;border-radius:.3em;padding:.05em .25em;top:auto;bottom:.15em;left:auto;right:.15em;background:#5b2a86;font-size:.6em}
+.hw.back{background:repeating-linear-gradient(45deg,#a8321f 0 6px,#8d2617 6px 12px);border:2px solid #7b1f12;color:#fff;display:flex;align-items:center;justify-content:center}
+.hw.back b{font-size:1em}
+.hw.nw{outline:3px solid var(--sun);outline-offset:1px}
+.hw.pk{outline:3px solid #3ddc84;outline-offset:1px;cursor:pointer;animation:hwpk .6s infinite alternate}
+@keyframes hwpk{to{transform:translateY(-4px)}}
+.hw.mt{outline:3px solid #3ddc84;outline-offset:1px}
+.mgfloor{display:flex;flex-wrap:wrap;gap:.45em .55em;justify-content:center;align-items:center;padding:.6em .4em;margin:.4em 0;border-radius:.8em;background:#2f6b45;min-height:6.5em}
+.mgfloor .hw{width:min(13.5vw,3.8em)}
+.mgfloor .hstk{display:flex}
+.mgfloor .hstk .hw+.hw{margin-left:calc(min(13.5vw,3.8em)*-.62)}
 .mgbar{display:flex;justify-content:space-between;align-items:center;font-size:.85em;margin:.35em 0 .15em}
 .mgcap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.3em}
-.mgcap .cg{background:var(--pine-soft);border-radius:.5em;padding:.2em .3em;min-height:2.4em;min-width:0;overflow:hidden}
+.mgcap .cg{background:var(--pine-soft);border-radius:.5em;padding:.2em .3em;min-height:3.1em;min-width:0;overflow:hidden}
 .mgcap .cg>span{font-size:.7em;color:var(--muted);display:block}
-.mgcap .cg>div{display:flex;flex-wrap:wrap;row-gap:2px}
-.mgfloor{display:flex;flex-wrap:wrap;gap:.3em;justify-content:center;padding:.5em;margin:.4em 0;border-radius:.8em;background:#2f6b45;min-height:4.5em;align-items:center}
-.mgmsg{text-align:center;font-size:.85em;margin:.2em 0;min-height:1.3em}
-.mghand{display:flex;flex-wrap:wrap;gap:.3em;justify-content:center;margin-top:.3em}
-.mghand .hw{cursor:pointer;font-size:1.08em}
+.mgcap .cg>div{display:flex;flex-wrap:wrap;row-gap:3px;padding-left:1.1em}
+.mgcap .hw.mini{width:1.9em;margin-left:-1.1em;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.mgcap .hw.mini em{display:none}
+.mgmsg{text-align:center;font-size:.9em;margin:.2em 0;min-height:1.3em}
+.mghand{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.4em;margin-top:.4em}
+.mghand .hw{width:100%;cursor:pointer}
 .mghand.wait .hw{opacity:.6}
 .pgb .pc.hint{outline:3px solid var(--sun);animation:hwpk .5s infinite alternate}

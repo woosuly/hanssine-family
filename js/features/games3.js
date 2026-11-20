@@ -91,7 +91,7 @@ const HWF=['','🌲','🌸','🌸','🍃','🌾','🌺','🍂','🌕','🌼','�
 const HWY={2:'🐦',4:'🐦',8:'🦢',5:'🌉',6:'🦋',7:'🐗',9:'🍶',10:'🦌',12:'🐦'};
 const HWN={g:'광',y:'열끗',p:'피',pp:'쌍피'},HWR={hong:'홍단',cheong:'청단',cho:'초단',bi:'띠'};
 const hwDeck=()=>{const o=[];HWT.forEach((ts,i)=>ts.forEach((t,k)=>o.push({id:i*4+k,m:i+1,t,rib:t==='t'?HWRIB[i+1]:null,bird:t==='y'&&[2,4,8].includes(i+1),rain:i===11&&t==='g'})));return o};
-const hwCard=(c,attr='',cls='')=>`<div class="hw ${c.t} ${cls}" ${attr}><b>${c.m}</b><i>${c.t==='g'?'<em>光</em>':c.t==='y'?HWY[c.m]:c.t==='t'?`<u class="rb ${c.rib}"></u>`:HWF[c.m]}</i><s>${c.t==='t'?HWR[c.rib]:HWN[c.t]}</s></div>`;
+const hwCard=(c,attr='',cls='')=>`<div class="hw ${c.t} ${cls}" ${attr} aria-label="${hwName(c)}" style="background-image:url(img/hw/${c.id}.webp)">${c.t==='g'?'<em>光</em>':c.t==='pp'?'<em class="pp">쌍피</em>':''}</div>`;
 const hwName=c=>`${c.m}월 ${c.t==='t'?HWR[c.rib]:HWN[c.t]}`;
 const piCnt=cap=>cap.reduce((a,x)=>a+(x.t==='p'?1:x.t==='pp'?2:0),0);
 function mgScore(cap){const of=t=>cap.filter(x=>x.t===t),g=of('g'),y=of('y'),t=of('t'),pi=piCnt(cap),P=[];let s=0;
@@ -122,12 +122,12 @@ function gameMatgo(){const lv=lvOf('matgo');
     const myT=turn===0&&!busy&&!over&&!pick&&!ask;
     sheet(`${lvBar('matgo')}
       <div class="mgbar"><span>컴퓨터 · 손패 ${hand[1].length}장</span><b class="num">${s1.s}점${go[1]?` · ${go[1]}고`:''}</b></div>${capView(cap[1])}
-      <div class="mgfloor">${fl.map(c=>{const pk=pick&&pick.opts.includes(c);return hwCard(c,pk?`data-pk="${c.id}"`:'',`${hot.includes(c.id)?'nw':''} ${pk?'pk':''}`)}).join('')}<div class="hw back"><b class="num">${deck.length}</b></div></div>
+      <div class="mgfloor">${[...new Set(fl.map(c=>c.m))].map(m=>`<div class="hstk">${fl.filter(c=>c.m===m).map(c=>{const pk=pick&&pick.opts.includes(c);return hwCard(c,pk?`data-pk="${c.id}"`:'',`${hot.includes(c.id)?'nw':''} ${pk?'pk':''}`)}).join('')}</div>`).join('')}<div class="hw back"><b class="num">${deck.length}</b></div></div>
       <p class="mgmsg">${msg}</p>
       ${ask?`<div class="actions"><button class="btn" id="mggo">고 · 계속</button><button class="btn ghost" id="mgstop">스톱 · ${ask.sc}점으로 끝</button></div>`:''}
       ${capView(cap[0])}<div class="mgbar"><span>나</span><b class="num">${s0.s}점${go[0]?` · ${go[0]}고`:''}</b></div>
       <div class="mghand ${myT?'':'wait'}">${H.map(c=>hwCard(c,`data-hc="${c.id}"`,floor.some(x=>x.m===c.m)?'mt':'')).join('')}</div>
-      <p class="muted" style="font-size:.75em;margin:.4em 0 0">숫자는 달(월)입니다. 바닥과 같은 달 패는 초록 테두리로 표시돼요. 7점부터 고·스톱을 고르고, 뻑·쪽·따닥·싹쓸이는 상대 피를 1장 가져옵니다.</p>`,true,()=>{over=true;gameMenu()});
+      <p class="muted" style="font-size:.75em;margin:.4em 0 0">바닥과 같은 달 패는 초록 테두리로 표시되고, 낸 패는 같은 달 패 위에 겹쳐 놓입니다. 7점부터 고·스톱을 고르고, 뻑·쪽·따닥·싹쓸이는 상대 피를 1장 가져옵니다.</p>`,true,()=>{over=true;gameMenu()});
     bindLv('matgo',()=>{over=true;gameMatgo()});
     document.querySelectorAll('[data-hc]').forEach(b=>b.onclick=()=>{if(turn!==0||busy||over||pick||ask)return;play(0,hand[0].find(x=>x.id===+b.dataset.hc))});
     document.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>{if(!pick)return;const r=pick.res,c=pick.opts.find(x=>x.id===+b.dataset.pk);pick=null;r(c)});
