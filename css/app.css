@@ -923,3 +923,25 @@ select.rccat.need{color:var(--sun);border-color:var(--sun)}
 .mghand .hw{width:100%;cursor:pointer}
 .mghand.wait .hw{opacity:.6}
 .pgb .pc.hint{outline:3px solid var(--sun);animation:hwpk .5s infinite alternate}
+/* 맞고 효과 */
+.hw.bonus{background:linear-gradient(150deg,#ffe082,#f5b301 55%,#c98a00);border:2px solid #fff3c4;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6b3f00;text-align:center;line-height:1.1}
+.hw.bonus i{font-style:normal;font-size:1.3em;color:#fff;text-shadow:0 0 6px #fff}
+.hw.bonus b{font-size:.8em}.hw.bonus span{font-size:.55em}
+.mgcap .hw.bonus.mini *{display:none}
+.hw.three{box-shadow:0 0 0 3px #ffcc33,0 1px 3px rgba(0,0,0,.35)}
+.hw.passc{background:repeating-linear-gradient(45deg,#333 0 6px,#222 6px 12px);border:2px dashed #ffcc33;color:#ffcc33;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer}
+.hw.passc b{font-size:.9em}.hw.passc span{font-size:.6em}
+.hw.nw{animation:hwslam .35s ease-out}
+@keyframes hwslam{0%{transform:scale(1.5) rotate(-8deg);opacity:.3}70%{transform:scale(.95)}100%{transform:none;opacity:1}}
+.hwfx{position:fixed;left:50%;top:42%;z-index:9999;pointer-events:none;transform:translate(-50%,-50%)}
+.hwfx b{display:block;font-size:3.2em;font-weight:900;color:#fff;white-space:nowrap;-webkit-text-stroke:2px #c8281e;text-shadow:0 4px 0 #7b1f12,0 0 24px rgba(255,200,0,.9);animation:hwpop 1.4s ease-out forwards}
+.hwfx.bomb b{font-size:4em;-webkit-text-stroke-color:#000;text-shadow:0 4px 0 #000,0 0 30px #ff6a00}
+.hwfx.bonus b{-webkit-text-stroke-color:#b07800;text-shadow:0 4px 0 #6b3f00,0 0 24px #ffe082}
+.hwfx.go b{-webkit-text-stroke-color:#d9480f;text-shadow:0 4px 0 #7a2a00,0 0 30px #ff922b}
+.hwfx.win b{-webkit-text-stroke-color:#2f6b45;text-shadow:0 4px 0 #173a24,0 0 30px #8ce99a}
+.hwfx.lose b{-webkit-text-stroke-color:#495057;text-shadow:0 4px 0 #212529;color:#e9ecef}
+.hwfx i{position:absolute;left:50%;top:50%;font-style:normal;font-size:1.6em;animation:hwburst 1s ease-out forwards;opacity:0}
+@keyframes hwpop{0%{transform:scale(.2) rotate(-12deg);opacity:0}18%{transform:scale(1.25) rotate(4deg);opacity:1}30%{transform:scale(1) rotate(0)}80%{opacity:1}100%{transform:scale(1.1) translateY(-30px);opacity:0}}
+@keyframes hwburst{0%{transform:translate(-50%,-50%) scale(.3);opacity:1}100%{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(1.1) rotate(200deg);opacity:0}}
+.hwquake{animation:hwquake .5s}
+@keyframes hwquake{0%,100%{transform:none}15%{transform:translate(-8px,4px)}30%{transform:translate(7px,-5px)}45%{transform:translate(-6px,-3px)}60%{transform:translate(5px,5px)}75%{transform:translate(-3px,2px)}}
