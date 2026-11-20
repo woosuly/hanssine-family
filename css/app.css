@@ -945,3 +945,7 @@ select.rccat.need{color:var(--sun);border-color:var(--sun)}
 @keyframes hwburst{0%{transform:translate(-50%,-50%) scale(.3);opacity:1}100%{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(1.1) rotate(200deg);opacity:0}}
 .hwquake{animation:hwquake .5s}
 @keyframes hwquake{0%,100%{transform:none}15%{transform:translate(-8px,4px)}30%{transform:translate(7px,-5px)}45%{transform:translate(-6px,-3px)}60%{transform:translate(5px,5px)}75%{transform:translate(-3px,2px)}}
+.mgtop{display:flex;align-items:center;gap:.5em}
+.mgtop>.seg,.mgtop>.mgvs{flex:1;min-width:0}
+.mgvs{font-weight:700}
+.mgsnd{flex:none;width:2.4em;height:2.4em;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:1em}

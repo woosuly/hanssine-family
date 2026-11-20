@@ -26,13 +26,13 @@ const GAMES=[
   ['freecell','프리셀','카드를 무늬별로 A부터 K까지 올리기',()=>gameFreecell()],
   ['g2048','2048','같은 숫자를 밀어서 합치기',()=>game2048()],
   ['pang','애니팡','같은 동물 3개 이상 가로·세로로 맞추기 · 60초',()=>gamePang()],
-  ['matgo','맞고','화투 2인 고스톱 · 컴퓨터와 대결',()=>gameMatgo()],
+  ['matgo','맞고','화투 2인 고스톱 · 가족 대결·컴퓨터',()=>matgoSetup()],
 ];
 // 난이도가 있는 놀이
 const LVG=['bingo','omok','cross','pairs','numbers','who','mines','freecell','pang','matgo'];
 // 많이 한 놀이 3개는 고정, 나머지는 분기마다 자동으로 바뀜 (가족 전체 횟수 기준)
 const gCount=id=>((S.gstat||{})[id]||0);
-const VS=['bingo','omok'];
+const VS=['bingo','omok','matgo'];
 function gameTop(){return GAMES.filter(g=>!VS.includes(g[0])).map((g,i)=>[g,i]).sort((x,y)=>gCount(y[0][0])-gCount(x[0][0])||x[1]-y[1]).slice(0,3).map(x=>x[0])}
 const quarter=()=>{const t=today0();return {key:t.getFullYear()*4+Math.floor(t.getMonth()/3),q:Math.floor(t.getMonth()/3)}};
 function gameRotate(){const top=gameTop().map(g=>g[0]);let seed=quarter().key*9301+49297;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;

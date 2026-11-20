@@ -106,7 +106,7 @@ function mgScore(cap){const of=t=>cap.filter(x=>x.t===t),g=of('g'),y=of('y'),t=o
 const hwBonus=()=>[{id:48,m:0,t:'b2'},{id:49,m:0,t:'b2'},{id:50,m:0,t:'b3'}];
 // 효과: 화면 가운데 큰 글씨 + 터지는 조각, 폭탄은 화면 흔들림, 패 놓는 소리
 let HWAC=null;
-function hwSound(kind){try{HWAC=HWAC||new (window.AudioContext||window.webkitAudioContext)();const ac=HWAC,t=ac.currentTime;
+function hwSound(kind){if(!hwSndOn())return;try{HWAC=HWAC||new (window.AudioContext||window.webkitAudioContext)();const ac=HWAC,t=ac.currentTime;
   if(kind==='slap'){const n=ac.sampleRate*.08,b=ac.createBuffer(1,n,ac.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);
     const s=ac.createBufferSource(),g=ac.createGain(),f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=1800;g.gain.value=.5;s.buffer=b;s.connect(f);f.connect(g);g.connect(ac.destination);s.start(t);return}
   const notes=kind==='bomb'?[110,82]:kind==='win'?[523,659,784,1047]:kind==='lose'?[392,330,262]:[659,880];
@@ -121,119 +121,177 @@ function hwFx(text,kind='hit'){const box=document.createElement('div');box.class
   if(kind==='bomb')document.querySelectorAll('.mgfloor,.mghand').forEach(l=>{l.classList.remove('hwquake');void l.offsetWidth;l.classList.add('hwquake')});
   try{navigator.vibrate&&navigator.vibrate(kind==='bomb'?[80,40,140]:kind==='win'?[60,40,60,40,120]:40)}catch(e){}
   hwSound(kind==='hit'||kind==='shake'||kind==='go'?'hit':kind)}
-function gameMatgo(){const lv=lvOf('matgo');
-  let d;do{d=[...hwDeck(),...hwBonus()].sort(()=>Math.random()-.5)}while([...Array(12)].some((_,m)=>d.slice(20,28).filter(x=>x.m===m+1).length===4));
-  let hand=[d.slice(0,10),d.slice(10,20)],floor=d.slice(20,28),deck=d.slice(28),cap=[[],[]],go=[0,0],decl=[0,0],shake=[0,0],pass=[0,0],turn=0,busy=false,over=false,pick=null,ask=null,opt=null,hot=[];
-  // 바닥에 깔린 보너스 패는 선(나)이 가져가고 그 자리를 더미에서 채움
-  while(floor.some(x=>x.m===0)){const b=floor.find(x=>x.m===0);floor.splice(floor.indexOf(b),1);cap[0].push(b);floor.push(deck.pop())}
-  let msg='내 차례입니다. 낼 패를 고르세요';
+// 패 묶음 — 카드 id = HWALL 순번 (0~47 화투, 48~50 보너스). 대결 때는 id 배열로 주고받음
+const HWALL=[...hwDeck(),...hwBonus()];
+const hw4=(cards,m)=>cards.filter(x=>x.m===m).length===4;
+function hwDeal(noChong){let d;
+  do{d=HWALL.slice().sort(()=>Math.random()-.5)}while([...Array(12)].some((_,m)=>hw4(d.slice(20,28),m+1))||(noChong&&[0,1].some(p=>[...Array(12)].some((_,m)=>hw4(d.slice(p*10,p*10+10),m+1)))));
+  const G={hand:[d.slice(0,10),d.slice(10,20)],floor:d.slice(20,28),deck:d.slice(28),cap:[[],[]],go:[0,0],decl:[0,0],shake:[0,0],pass:[0,0],turn:0};
+  // 바닥에 깔린 보너스 패는 선이 가져가고 그 자리를 더미에서 채움
+  while(G.floor.some(x=>x.m===0)){const b=G.floor.find(x=>x.m===0);G.floor.splice(G.floor.indexOf(b),1);G.cap[0].push(b);G.floor.push(G.deck.pop())}
+  return G}
+const hwPack=G=>{const ids=a=>a.map(c=>c.id);return JSON.stringify({...G,hand:G.hand.map(ids),floor:ids(G.floor),deck:ids(G.deck),cap:G.cap.map(ids)})};
+const hwUnpack=s=>{const G=JSON.parse(s),cs=a=>a.map(i=>HWALL[i]);G.hand=G.hand.map(cs);G.floor=cs(G.floor);G.deck=cs(G.deck);G.cap=G.cap.map(cs);return G};
+const hwSndOn=()=>pref('hwsnd',true)!==false;
+
+// 맞고 첫 화면: 가족에게 대결 신청 또는 컴퓨터와
+function matgoSetup(){const online=!LOCAL&&SYNC.live,opp=S.members.filter(x=>x.id!==ME);
+  if(!online)return gameMatgo();
+  sheet(`${lvBar('matgo')}<h2 style="margin-top:.5em">맞고 · 누구와 칠까요?</h2><p class="muted" style="font-size:.85em;margin:.2em 0 0">대결은 신청한 사람이 먼저 칩니다. 각자 자기 폰에서 내 패만 봅니다.</p>
+    <div class="glist">${opp.map(o=>`<button data-mo="${o.id}"><b>${esc(o.name)}에게 대결 신청</b><span>${esc(o.name)} 폰에 알림이 갑니다</span></button>`).join('')}
+    <button data-mo="cpu"><b>혼자 하기</b><span>컴퓨터와 대결 · ${lvName('matgo')}</span></button></div>`,true,gameMenu);
+  bindLv('matgo',matgoSetup);
+  document.querySelectorAll('[data-mo]').forEach(b=>b.onclick=async()=>{const id=b.dataset.mo;if(id==='cpu')return gameMatgo();b.disabled=true;
+    try{const d=await gamesRef().add({type:'matgo',a:ME,b:id,s:hwPack(hwDeal(true)),seq:0,status:'invite',ts:Date.now()});matgoOnline(d.id)}
+    catch(e){console.warn(e);toast('대결을 신청하지 못했어요');b.disabled=false}})}
+function matgoOnline(gid){if(GUNSUB){GUNSUB();GUNSUB=null}let core=null,ended=false;
+  const stop=()=>{if(GUNSUB){GUNSUB();GUNSUB=null}};
+  const quit=d=>{stop();if(core)core.kill();if(d&&['invite','play'].includes(d.status))gamesRef().doc(gid).update({status:'cancel',by:ME}).catch(()=>{});gameMenu()};
+  GUNSUB=gamesRef().doc(gid).onSnapshot(snap=>{if(ended)return;const d=snap.data();if(!d){stop();return}
+    const role=d.a===ME?'a':'b',opp=mem(d[role==='a'?'b':'a'])||{name:'상대'};
+    if(d.status==='invite'){sheet(`<div class="result"><div class="big">${esc(opp.name)} 기다리는 중</div><div class="fact">${esc(opp.name)} 폰에 "맞고 한 판 하실래요?" 알림을 보냈어요</div>
+        <div class="actions"><button class="btn ghost" id="gcx">신청 취소</button></div></div>`,true,()=>quit(d));$('#gcx').onclick=()=>quit(d);return}
+    if(['cancel','decline'].includes(d.status)){ended=true;stop();if(core)core.kill();const t=d.status==='decline'?`${opp.name}님이 다음에 하자고 했어요`:d.by===ME?'대결을 그만뒀어요':`${opp.name}님이 대결을 그만뒀어요`;
+      sheet(`<div class="result"><div class="big">${esc(t)}</div><div class="actions"><button class="btn ghost" id="more">다른 놀이</button><button class="btn ghost" id="ok">처음 화면</button></div></div>`,true,gameMenu);
+      $('#more').onclick=gameMenu;$('#ok').onclick=()=>{close();render()};return}
+    if(!core)core=gameMatgo({gid,me:role==='a'?0:1,name:opp.name,quit:()=>quit(d)},d);else core.sync(d);
+    if(d.status==='over'){ended=true;stop()}
+  },e=>{console.warn('matgo',e);toast('대결 정보를 받지 못했어요')})}
+
+// net: 대결이면 {gid, me(내 자리 0|1), name(상대 이름), quit}, 없으면 컴퓨터와
+function gameMatgo(net,d0){const lv=lvOf('matgo'),cpuG=!net,me=net?net.me:0,op=1-me,oname=net?net.name:'컴퓨터';
+  let G=net?hwUnpack(d0.s):hwDeal(false),seq=net?d0.seq||0:0;
+  let busy=false,over=false,pick=null,ask=null,opt=null,hot=[];
+  let msg=G.turn===me?'내 차례입니다. 낼 패를 고르세요':`${esc(oname)}님 차례…`;
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
-  const who=p=>p?'컴퓨터':'내';
+  const subj=p=>p===me?'내가':cpuG?'컴퓨터가':`${esc(oname)}님이`;
   const isB=c=>c.m===0;
   const V=(c,p)=>{if(isB(c))return 30;let v=c.t==='g'?(c.rain?10:20):c.t==='y'?(c.bird?14:8):c.t==='t'?(c.rib!=='bi'?9:6):c.t==='pp'?7:4;
-    if(lv==='hard'){const mine=cap[p];if(c.bird)v+=mine.filter(x=>x.bird).length*6;if(c.rib&&c.rib!=='bi')v+=mine.filter(x=>x.rib===c.rib).length*5;if(c.t==='g')v+=mine.filter(x=>x.t==='g').length*6;if(c.t==='p'||c.t==='pp')v+=piCnt(mine)>=7?3:0}
+    if(lv==='hard'){const mine=G.cap[p];if(c.bird)v+=mine.filter(x=>x.bird).length*6;if(c.rib&&c.rib!=='bi')v+=mine.filter(x=>x.rib===c.rib).length*5;if(c.t==='g')v+=mine.filter(x=>x.t==='g').length*6;if(c.t==='p'||c.t==='pp')v+=piCnt(mine)>=7?3:0}
     return v};
-  const steal=p=>{const o=cap[1-p];let i=o.findIndex(x=>x.t==='p');if(i<0)i=o.findIndex(x=>x.t==='pp');if(i<0)i=o.findIndex(x=>isB(x));if(i>=0)cap[p].push(o.splice(i,1)[0])};
-  const choose=(p,opts)=>{if(p===1)return Promise.resolve(opts.slice().sort((a,b)=>V(b,1)-V(a,1))[0]);
+  const steal=p=>{const o=G.cap[1-p];let i=o.findIndex(x=>x.t==='p');if(i<0)i=o.findIndex(x=>x.t==='pp');if(i<0)i=o.findIndex(x=>isB(x));if(i>=0)G.cap[p].push(o.splice(i,1)[0])};
+  const choose=(p,opts)=>{if(p!==me)return Promise.resolve(opts.slice().sort((a,b)=>V(b,p)-V(a,p))[0]);
     return new Promise(r=>{pick={opts,res:r};msg='같은 달 패가 두 장이에요. 가져올 패를 누르세요';draw()})};
   const askOpt=(text,opts)=>new Promise(r=>{opt={opts,res:r};msg=text;draw()});
-  const aiGo=sc=>{const opp=mgScore(cap[0]).s;return lv==='easy'?Math.random()<.5:lv==='normal'?deck.length>=6&&opp<5:deck.length>=8&&opp<4&&go[1]<3};
+  const aiGo=sc=>{const opp=mgScore(G.cap[0]).s;return lv==='easy'?Math.random()<.5:lv==='normal'?G.deck.length>=6&&opp<5:G.deck.length>=8&&opp<4&&G.go[1]<3};
   const capView=cp=>`<div class="mgcap">${[['g','광'],['y','열끗'],['t','띠'],['p','피']].map(([k,n])=>{const a=cp.filter(x=>k==='p'?['p','pp','b2','b3'].includes(x.t):x.t===k);
     return `<div class="cg"><span>${n} <b class="num">${k==='p'?piCnt(cp):a.length}</b></span><div>${a.map(c=>hwCard(c,'','mini')).join('')}</div></div>`}).join('')}</div>`;
-  const tags=p=>[go[p]?`${go[p]}고`:'',shake[p]?`흔들기·폭탄 ${shake[p]}`:''].filter(Boolean).map(x=>` · ${x}`).join('');
-  const draw=()=>{const s0=mgScore(cap[0]),s1=mgScore(cap[1]),fl=[...floor].sort((a,b)=>a.m-b.m),H=hand[0].slice().sort((a,b)=>a.m-b.m||a.id-b.id);
-    const myT=turn===0&&!busy&&!over&&!pick&&!ask&&!opt;
-    sheet(`${lvBar('matgo')}
-      <div class="mgbar"><span>컴퓨터 · 손패 ${hand[1].length}장${pass[1]?` · 폭탄패 ${pass[1]}`:''}</span><b class="num">${s1.s}점${tags(1)}</b></div>${capView(cap[1])}
-      <div class="mgfloor">${[...new Set(fl.map(c=>c.m))].map(m=>`<div class="hstk">${fl.filter(c=>c.m===m).map(c=>{const pk=pick&&pick.opts.includes(c);return hwCard(c,pk?`data-pk="${c.id}"`:'',`${hot.includes(c.id)?'nw':''} ${pk?'pk':''}`)}).join('')}</div>`).join('')}<div class="hw back"><b class="num">${deck.length}</b></div></div>
+  const tags=p=>[G.go[p]?`${G.go[p]}고`:'',G.shake[p]?`흔들기·폭탄 ${G.shake[p]}`:''].filter(Boolean).map(x=>` · ${x}`).join('');
+  // 대결: 내 차례가 끝날 때 판 전체를 올리고, 상대 폰은 받은 판으로 다시 그림
+  const push=(last,extra={})=>{if(!net)return Promise.resolve();seq++;
+    return gamesRef().doc(net.gid).update({s:hwPack(G),seq,last:{...last,by:me},ts:Date.now(),...extra}).catch(e=>{console.warn(e);toast('판을 보내지 못했어요')})};
+  const draw=()=>{if(over==='killed')return;const sm=mgScore(G.cap[me]),so=mgScore(G.cap[op]),fl=[...G.floor].sort((a,b)=>a.m-b.m),H=G.hand[me].slice().sort((a,b)=>a.m-b.m||a.id-b.id);
+    const myT=G.turn===me&&!busy&&!over&&!pick&&!ask&&!opt;
+    sheet(`<div class="mgtop">${cpuG?lvBar('matgo'):`<span class="mgvs">${esc(oname)}님과 대결</span>`}<button class="mgsnd" id="mgsnd" aria-label="소리 켜고 끄기">${hwSndOn()?'🔊':'🔇'}</button></div>
+      <div class="mgbar"><span>${esc(oname)} · 손패 ${G.hand[op].length}장${G.pass[op]?` · 폭탄패 ${G.pass[op]}`:''}</span><b class="num">${so.s}점${tags(op)}</b></div>${capView(G.cap[op])}
+      <div class="mgfloor">${[...new Set(fl.map(c=>c.m))].map(m=>`<div class="hstk">${fl.filter(c=>c.m===m).map(c=>{const pk=pick&&pick.opts.includes(c);return hwCard(c,pk?`data-pk="${c.id}"`:'',`${hot.includes(c.id)?'nw':''} ${pk?'pk':''}`)}).join('')}</div>`).join('')}<div class="hw back"><b class="num">${G.deck.length}</b></div></div>
       <p class="mgmsg">${msg}</p>
       ${ask?`<div class="actions"><button class="btn" id="mggo">고 · 계속</button><button class="btn ghost" id="mgstop">스톱 · ${ask.sc}점으로 끝</button></div>`:''}
       ${opt?`<div class="actions">${opt.opts.map(([v,t],i)=>`<button class="btn ${i?'ghost':''}" data-opt="${v}">${t}</button>`).join('')}</div>`:''}
-      ${capView(cap[0])}<div class="mgbar"><span>나</span><b class="num">${s0.s}점${tags(0)}</b></div>
-      <div class="mghand ${myT?'':'wait'}">${H.map(c=>{const n3=!isB(c)&&H.filter(x=>x.m===c.m).length>=3;return hwCard(c,`data-hc="${c.id}"`,`${floor.some(x=>x.m===c.m)?'mt':''} ${n3?'three':''}`)}).join('')}${pass[0]?`<div class="hw passc" data-pass="1"><b>뒤집기</b><span>폭탄패 ×${pass[0]}</span></div>`:''}</div>
-      <p class="muted" style="font-size:.75em;margin:.4em 0 0">같은 달 패를 3장 들고 있으면(노란 표시) 흔들기(×2), 바닥에 같은 달이 1장 있으면 폭탄(3장 한꺼번에, ×2)을 할 수 있어요. 별 패는 보너스(조커)로 내면 바로 가져오고 한 장 더 받습니다.</p>`,true,()=>{over=true;gameMenu()});
-    bindLv('matgo',()=>{over=true;gameMatgo()});
-    document.querySelectorAll('[data-hc]').forEach(b=>b.onclick=()=>{if(!myT)return;tapHand(hand[0].find(x=>x.id===+b.dataset.hc))});
-    if($('[data-pass]'))$('[data-pass]').onclick=()=>{if(!myT)return;play(0,null,'pass')};
+      ${capView(G.cap[me])}<div class="mgbar"><span>나</span><b class="num">${sm.s}점${tags(me)}</b></div>
+      <div class="mghand ${myT?'':'wait'}">${H.map(c=>{const n3=!isB(c)&&H.filter(x=>x.m===c.m).length>=3;return hwCard(c,`data-hc="${c.id}"`,`${G.floor.some(x=>x.m===c.m)?'mt':''} ${n3?'three':''}`)}).join('')}${G.pass[me]?`<div class="hw passc" data-pass="1"><b>뒤집기</b><span>폭탄패 ×${G.pass[me]}</span></div>`:''}</div>
+      <p class="muted" style="font-size:.75em;margin:.4em 0 0">같은 달 패를 3장 들고 있으면(노란 표시) 흔들기(×2), 바닥에 같은 달이 1장 있으면 폭탄(3장 한꺼번에, ×2)을 할 수 있어요. 별 패는 보너스(조커)로 내면 바로 가져오고 한 장 더 받습니다.${net?' 뒤로 가면 대결을 그만둡니다.':''}</p>`,true,()=>{over='killed';net?net.quit():gameMenu()});
+    if(cpuG)bindLv('matgo',()=>{over='killed';gameMatgo()});
+    $('#mgsnd').onclick=()=>{setPref('hwsnd',!hwSndOn());$('#mgsnd').textContent=hwSndOn()?'🔊':'🔇'};
+    document.querySelectorAll('[data-hc]').forEach(b=>b.onclick=()=>{if(!myT)return;tapHand(G.hand[me].find(x=>x.id===+b.dataset.hc))});
+    if($('[data-pass]'))$('[data-pass]').onclick=()=>{if(!myT)return;play(me,null,'pass')};
     document.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>{if(!pick)return;const r=pick.res,c=pick.opts.find(x=>x.id===+b.dataset.pk);pick=null;r(c)});
     document.querySelectorAll('[data-opt]').forEach(b=>b.onclick=()=>{if(!opt)return;const r=opt.res;opt=null;r(b.dataset.opt)});
     if(ask){$('#mggo').onclick=()=>{const r=ask.res;ask=null;r(true)};$('#mgstop').onclick=()=>{const r=ask.res;ask=null;r(false)}}
   };
+  const gone=()=>!!over;
   // 내 패 고르기: 보너스·폭탄·흔들기 확인
   async function tapHand(c){hwSound('slap');
-    if(isB(c))return bonusPlay(0,c);
-    const n=hand[0].filter(x=>x.m===c.m).length,f=floor.filter(x=>x.m===c.m).length;
-    if(n>=3&&f===1){busy=true;const v=await askOpt(`${c.m}월 패가 3장이에요. 폭탄을 할까요?`,[['bomb','폭탄! (3장 한꺼번에)'],['one','한 장만 내기']]);busy=false;if(over)return;if(v==='bomb')return play(0,c,'bomb')}
-    else if(n>=3&&f===0){busy=true;const v=await askOpt(`${c.m}월 패가 3장이에요. 흔들까요? (이기면 ×2)`,[['shake','흔들기'],['one','그냥 내기']]);busy=false;if(over)return;
-      if(v==='shake'){shake[0]++;hot=hand[0].filter(x=>x.m===c.m).map(x=>x.id);hwFx('흔들기!','shake');draw();await wait(900)}}
-    play(0,c,'n')}
-  async function bonusPlay(p,c){busy=true;hand[p].splice(hand[p].indexOf(c),1);cap[p].push(c);
-    if(deck.length)hand[p].push(deck.pop());
-    msg=`${who(p)}가 보너스 패(${c.t==='b3'?'쓰리피':'쌍피'})를 가져왔어요 · 한 장 더 받아 다시 냅니다`;hwFx('보너스!','bonus');draw();await wait(1100);if(over)return;
-    busy=false;msg=p?'컴퓨터 차례…':'한 장 더 내세요';draw();if(p===1)setTimeout(cpu,600)}
-  async function play(p,c,mode){if(over)return;busy=true;let st=0,got=[],puk=false;const note=[];let fm=[],placed=null,pend=null;
-    if(mode==='pass'){pass[p]--;hot=[];msg=`${who(p)}가 폭탄패로 뒤집기만 해요`;draw();await wait(500)}
-    else if(mode==='bomb'){const three=hand[p].filter(x=>x.m===c.m);hand[p]=hand[p].filter(x=>x.m!==c.m);fm=floor.filter(x=>x.m===c.m);floor.push(...three);
-      hot=three.map(x=>x.id);pend=[...three,...fm];st++;shake[p]++;pass[p]+=2;note.push('폭탄');msg=`${who(p)}가 ${c.m}월 폭탄!`;draw();hwFx('폭탄!','bomb');await wait(1200)}
-    else{hand[p].splice(hand[p].indexOf(c),1);fm=floor.filter(x=>x.m===c.m);
+    if(isB(c))return bonusPlay(me,c);
+    const n=G.hand[me].filter(x=>x.m===c.m).length,f=G.floor.filter(x=>x.m===c.m).length;let shook=false;
+    if(n>=3&&f===1){busy=true;const v=await askOpt(`${c.m}월 패가 3장이에요. 폭탄을 할까요?`,[['bomb','폭탄! (3장 한꺼번에)'],['one','한 장만 내기']]);busy=false;if(gone())return;if(v==='bomb')return play(me,c,'bomb')}
+    else if(n>=3&&f===0){busy=true;const v=await askOpt(`${c.m}월 패가 3장이에요. 흔들까요? (이기면 ×2)`,[['shake','흔들기'],['one','그냥 내기']]);busy=false;if(gone())return;
+      if(v==='shake'){G.shake[me]++;shook=true;hot=G.hand[me].filter(x=>x.m===c.m).map(x=>x.id);hwFx('흔들기!','shake');draw();await wait(900)}}
+    play(me,c,'n',shook)}
+  async function bonusPlay(p,c){busy=true;G.hand[p].splice(G.hand[p].indexOf(c),1);G.cap[p].push(c);
+    if(G.deck.length)G.hand[p].push(G.deck.pop());
+    msg=`${subj(p)} 보너스 패(${c.t==='b3'?'쓰리피':'쌍피'})를 가져왔어요 · 한 장 더 받아 다시 냅니다`;hwFx('보너스!','bonus');draw();
+    await push({ids:[c.id],notes:['보너스'],msg});await wait(1100);if(gone())return;
+    busy=false;msg=p===me?'한 장 더 내세요':`${cpuG?'컴퓨터':esc(oname)+'님'} 차례…`;draw();if(cpuG&&p===1)setTimeout(cpu,600)}
+  async function play(p,c,mode,shook){if(gone())return;busy=true;let st=0,got=[];const note=shook?['흔들기']:[];let fm=[],placed=null,pend=null,ids=[];
+    if(mode==='pass'){G.pass[p]--;hot=[];msg=`${subj(p)} 폭탄패로 뒤집기만 해요`;draw();await wait(500)}
+    else if(mode==='bomb'){const three=G.hand[p].filter(x=>x.m===c.m);G.hand[p]=G.hand[p].filter(x=>x.m!==c.m);fm=G.floor.filter(x=>x.m===c.m);G.floor.push(...three);
+      hot=three.map(x=>x.id);pend=[...three,...fm];st++;G.shake[p]++;G.pass[p]+=2;note.push('폭탄');msg=`${subj(p)} ${c.m}월 폭탄!`;draw();hwFx('폭탄!','bomb');await wait(1200)}
+    else{G.hand[p].splice(G.hand[p].indexOf(c),1);fm=G.floor.filter(x=>x.m===c.m);
       if(!fm.length)placed=c;else if(fm.length===1)pend=[c,fm[0]];else if(fm.length===2)pend=[c,await choose(p,fm)];else{pend=[c,...fm];st++;note.push('뻑 먹기')}
-      if(over)return;floor.push(c);hot=[c.id];msg=`${who(p)}가 ${hwName(c)}을(를) 냈어요`;draw();hwSound('slap');await wait(650)}
-    if(over)return;
-    let f=null;while(deck.length){const x=deck.pop();if(isB(x)){cap[p].push(x);msg=`보너스 패가 뒤집혀 ${who(p)}가 가져가요`;hwFx('보너스!','bonus');draw();await wait(1000);if(over)return;continue}f=x;break}
-    if(f){floor.push(f);hot=[...hot,f.id];msg=`뒤집은 패: ${hwName(f)}`;draw();hwSound('slap');await wait(650);if(over)return;
+      if(gone())return;G.floor.push(c);hot=[c.id];msg=`${subj(p)} ${hwName(c)}을(를) 냈어요`;draw();hwSound('slap');await wait(650)}
+    if(gone())return;ids=hot.slice();
+    let f=null;while(G.deck.length){const x=G.deck.pop();if(isB(x)){G.cap[p].push(x);note.push('보너스');msg=`보너스 패가 뒤집혀 ${subj(p)} 가져가요`;hwFx('보너스!','bonus');draw();await wait(1000);if(gone())return;continue}f=x;break}
+    if(f){G.floor.push(f);hot=[...hot,f.id];ids=hot.slice();msg=`뒤집은 패: ${hwName(f)}`;draw();hwSound('slap');await wait(650);if(gone())return;
       if(mode==='n'&&pend&&pend.length===2&&f.m===c.m){
-        if(fm.length===1){puk=true;note.push('뻑')}else{got.push(...floor.filter(x=>x.m===c.m));st++;note.push('따닥')}pend=null}
-      else{const fm2=floor.filter(x=>x.m===f.m&&x!==f&&!(pend&&pend.includes(x)));
+        if(fm.length===1)note.push('뻑');else{got.push(...G.floor.filter(x=>x.m===c.m));st++;note.push('따닥')}pend=null}
+      else{const fm2=G.floor.filter(x=>x.m===f.m&&x!==f&&!(pend&&pend.includes(x)));
         if(placed&&f.m===placed.m){got.push(placed,f);st++;note.push('쪽')}
         else if(fm2.length===1)got.push(f,fm2[0]);
         else if(fm2.length===2)got.push(f,await choose(p,fm2));
         else if(fm2.length===3){got.push(f,...fm2);st++;note.push('뻑 먹기')}}}
     if(pend)got.push(...pend);
-    if(over)return;
-    got=[...new Set(got)];floor=floor.filter(x=>!got.includes(x));cap[p].push(...got);
-    if(!floor.length&&deck.length){st++;note.push('싹쓸이')}
+    if(gone())return;
+    got=[...new Set(got)];G.floor=G.floor.filter(x=>!got.includes(x));G.cap[p].push(...got);
+    if(!G.floor.length&&G.deck.length){st++;note.push('싹쓸이')}
     for(let k=0;k<st;k++)steal(p);
-    hot=[];msg=`${who(p)}가 ${got.length?got.length+'장 가져갔어요':'못 가져갔어요'}${note.length?' · '+note.join(' · ')+(st?` (피 ${st}장 가져옴)`:''):''}`;draw();
-    const big=note.filter(x=>x!=='폭탄');for(const t of big){hwFx(t+'!',t==='뻑'?'lose':'hit');await wait(900);if(over)return}
-    await wait(500);if(over)return;
-    const sc=mgScore(cap[p]).s,last=!hand[0].length&&!hand[1].length&&!pass[0]&&!pass[1];
-    if(sc>=7&&sc>decl[p]){const g1=last?false:p===1?aiGo(sc):await new Promise(r=>{ask={sc,res:r};msg=`${sc}점이 났어요. 고 또는 스톱을 고르세요`;draw()});if(over)return;
-      if(!g1)return end(p);go[p]++;decl[p]=sc;msg=`${who(p)}가 ${go[p]}고!`;draw();hwFx(`${go[p]}고!`,'go');await wait(1100);if(over)return}
-    if(last)return end(-1);
-    turn=1-p;if(!hand[turn].length&&!pass[turn])turn=p;
-    busy=false;msg=turn?'컴퓨터 차례…':'내 차례입니다. 낼 패를 고르세요';draw();if(turn===1)setTimeout(cpu,700)}
-  async function cpu(){if(over)return;const H=hand[1];
+    hot=[];msg=`${subj(p)} ${got.length?got.length+'장 가져갔어요':'못 가져갔어요'}${note.filter(x=>x!=='보너스'&&x!=='흔들기').length?' · '+note.filter(x=>x!=='보너스'&&x!=='흔들기').join(' · ')+(st?` (피 ${st}장 가져옴)`:''):''}`;draw();
+    const big=note.filter(x=>!['폭탄','보너스','흔들기'].includes(x));for(const t of big){hwFx(t+'!',t==='뻑'?'lose':'hit');await wait(900);if(gone())return}
+    await wait(400);if(gone())return;
+    const sc=mgScore(G.cap[p]).s,last=!G.hand[0].length&&!G.hand[1].length&&!G.pass[0]&&!G.pass[1];let goN=0;
+    if(sc>=7&&sc>G.decl[p]){const g1=last?false:p!==me?aiGo(sc):await new Promise(r=>{ask={sc,res:r};msg=`${sc}점이 났어요. 고 또는 스톱을 고르세요`;draw()});if(gone())return;
+      if(!g1)return end(p,null,{ids,notes:[...note,'스톱'],msg:`${subj(p)} ${sc}점에서 스톱!`});
+      G.go[p]++;G.decl[p]=sc;goN=G.go[p];msg=`${subj(p)} ${G.go[p]}고!`;draw();hwFx(`${G.go[p]}고!`,'go');await wait(1100);if(gone())return}
+    if(last)return end(-1,null,{ids,notes:note,msg});
+    G.turn=1-p;if(!G.hand[G.turn].length&&!G.pass[G.turn])G.turn=p;
+    const lastMsg=goN?`${subj(p)} ${goN}고!`:msg;
+    busy=false;msg=G.turn===me?'내 차례입니다. 낼 패를 고르세요':`${cpuG?'컴퓨터':esc(oname)+'님'} 차례…`;draw();
+    await push({ids,notes:goN?[...note,`${goN}고`]:note,msg:lastMsg});
+    if(cpuG&&G.turn===1)setTimeout(cpu,700)}
+  async function cpu(){if(gone())return;const H=G.hand[1];
     const b=H.find(isB);if(b)return bonusPlay(1,b);
-    if(!H.length&&pass[1])return play(1,null,'pass');
-    let best=H[0],bv=-1e9,mode='n';
-    H.forEach(c=>{const fm=floor.filter(x=>x.m===c.m),n=H.filter(x=>x.m===c.m).length;
+    if(!H.length&&G.pass[1])return play(1,null,'pass');
+    let best=H[0],bv=-1e9,mode='n',shook=false;
+    H.forEach(c=>{const fm=G.floor.filter(x=>x.m===c.m),n=H.filter(x=>x.m===c.m).length;
       let v=fm.length?V(c,1)+(fm.length===3?fm.reduce((a,x)=>a+V(x,1),0)+8:Math.max(...fm.map(x=>V(x,1)))):-V(c,1)*.4;
       if(n>=3&&fm.length===1&&(lv!=='easy'||Math.random()<.5))v+=40;
       if(lv!=='easy'&&!fm.length&&n>1)v+=3;
       if(lv==='hard'&&!fm.length)v-=V(c,0)*.3;
       v+=Math.random()*(lv==='easy'?14:2);if(v>bv){bv=v;best=c}});
-    const n=H.filter(x=>x.m===best.m).length,f=floor.filter(x=>x.m===best.m).length;
+    if(!best)return;
+    const n=H.filter(x=>x.m===best.m).length,f=G.floor.filter(x=>x.m===best.m).length;
     if(n>=3&&f===1&&bv>=30)mode='bomb';
-    else if(n>=3&&f===0&&(lv!=='easy'||Math.random()<.5)){shake[1]++;hot=H.filter(x=>x.m===best.m).map(x=>x.id);msg='컴퓨터가 흔들었어요!';draw();hwFx('흔들기!','shake');await wait(1000);if(over)return}
-    if(!H.length)return;play(1,best,mode)}
-  function end(w,special){over=true;busy=false;draw();markLog('game',true);
-    if(w<0){hwFx('나가리','lose');return setTimeout(()=>resultView('나가리 (무승부)',['패를 다 낼 때까지 아무도 스톱을 못 했어요',partLine()],'matgo',gameMatgo),1100)}
-    let total,lines;
-    if(special){total=10;lines=[`${w?'컴퓨터':'나'} <b class="num">10점</b>`,`${special} — 처음 받은 패에 같은 달 4장`]}
-    else{const a=mgScore(cap[w]),b=mgScore(cap[1-w]),n=go[w],why=[];let pts=a.s,mul=1;
-      if(n===1||n===2){pts+=n;why.push(`${n}고 +${n}`)}else if(n>=3){pts+=2;mul*=2**(n-2);why.push(`${n}고 ×${2**(n-2)}`)}
-      if(shake[w]){mul*=2**shake[w];why.push(`흔들기·폭탄 ×${2**shake[w]}`)}
-      if(a.pi>=10&&b.pi<7){mul*=2;why.push('피박 ×2')}
-      if(a.g>=3&&b.g===0){mul*=2;why.push('광박 ×2')}
-      if(go[1-w]>0){mul*=2;why.push('고박 ×2')}
-      total=pts*mul;lines=[`${w?'컴퓨터':'나'} <b class="num">${total}점</b>`,a.P.join(' · ')+(why.length?' · '+why.join(' · '):'')];
-      setTimeout(()=>why.filter(x=>/박/.test(x)).forEach((x,i)=>setTimeout(()=>hwFx(x.replace(' ×2','!'),w?'lose':'hit'),i*700)),300)}
-    hwFx(w?'컴퓨터 승':(special||'스톱!'),w?'lose':'win');if(!w)setTimeout(()=>hwSound('win'),200);else hwSound('lose');
-    if(w===0)lines.push(recLine('matgo',total));lines.push(partLine());
-    setTimeout(()=>resultView(w?'컴퓨터가 이겼어요':'이겼어요',lines,'matgo',gameMatgo),1600)}
+    else if(n>=3&&f===0&&(lv!=='easy'||Math.random()<.5)){G.shake[1]++;shook=true;hot=H.filter(x=>x.m===best.m).map(x=>x.id);msg='컴퓨터가 흔들었어요!';draw();hwFx('흔들기!','shake');await wait(1000);if(gone())return}
+    play(1,best,mode,shook)}
+  // 결과: 점수 계산은 이긴 쪽 기준. 대결이면 결과도 같이 올림
+  function score(w){const a=mgScore(G.cap[w]),b=mgScore(G.cap[1-w]),n=G.go[w],why=[];let pts=a.s,mul=1;
+    if(n===1||n===2){pts+=n;why.push(`${n}고 +${n}`)}else if(n>=3){pts+=2;mul*=2**(n-2);why.push(`${n}고 ×${2**(n-2)}`)}
+    if(G.shake[w]){mul*=2**G.shake[w];why.push(`흔들기·폭탄 ×${2**G.shake[w]}`)}
+    if(a.pi>=10&&b.pi<7){mul*=2;why.push('피박 ×2')}
+    if(a.g>=3&&b.g===0){mul*=2;why.push('광박 ×2')}
+    if(G.go[1-w]>0){mul*=2;why.push('고박 ×2')}
+    return {total:pts*mul,detail:a.P.join(' · ')+(why.length?' · '+why.join(' · '):''),why}}
+  function showEnd(w,res){over=true;busy=false;draw();markLog('game',true);
+    if(w<0){hwFx('나가리','lose');return setTimeout(()=>resultView('나가리 (무승부)',['패를 다 낼 때까지 아무도 스톱을 못 했어요',partLine()],'matgo',cpuG?gameMatgo:matgoSetup),1100)}
+    const mine=w===me,lines=[`${mine?'나':esc(oname)} <b class="num">${res.total}점</b>`,res.detail];
+    (res.why||[]).filter(x=>/박/.test(x)).forEach((x,i)=>setTimeout(()=>hwFx(x.replace(' ×2','!'),mine?'hit':'lose'),300+i*700));
+    hwFx(mine?(res.special||'승리!'):`${cpuG?'컴퓨터':esc(oname)} 승`,mine?'win':'lose');if(mine)setTimeout(()=>hwSound('win'),200);else hwSound('lose');
+    if(mine)lines.push(recLine('matgo',res.total));
+    lines.push(partLine());
+    setTimeout(()=>resultView(mine?'이겼어요':`${cpuG?'컴퓨터가':esc(oname)+'님이'} 이겼어요`,lines,'matgo',cpuG?gameMatgo:matgoSetup),1600)}
+  async function end(w,special,last){let res=null;
+    if(w>=0)res=special?{total:10,detail:`${special} — 처음 받은 패에 같은 달 4장`,special}:score(w);
+    await push(last||{ids:[],notes:[],msg:''},{status:'over',winner:w,res});showEnd(w,res)}
+  // 상대가 올린 판 받기: 놓인 패 표시 → 효과 → 내 차례
+  async function sync(d){if(over||!d.seq||d.seq<=seq)return;seq=d.seq;G=hwUnpack(d.s);const L=d.last||{};
+    hot=L.ids||[];msg=(L.msg||'').replace(/내가/g,`${esc(oname)}님이`);draw();hwSound('slap');
+    for(const t of (L.notes||[])){hwFx(t+'!',t==='폭탄'?'bomb':t==='보너스'?'bonus':t==='뻑'?'lose':/고$/.test(t)?'go':t==='흔들기'?'shake':'hit');await wait(800)}
+    if(d.status==='over')return showEnd(d.winner,d.res);
+    hot=[];msg=G.turn===me?'내 차례입니다. 낼 패를 고르세요':`${esc(oname)}님 차례…`;draw()}
   draw();
-  // 총통: 처음 받은 패에 같은 달 4장이면 바로 이김
-  for(const p of [0,1]){const m=[...Array(12)].findIndex((_,i)=>hand[p].filter(x=>x.m===i+1).length===4);if(m>=0){setTimeout(()=>{hwFx('총통!','win');end(p,`${m+1}월 총통`)},500);break}}
+  // 총통(컴퓨터와 할 때만): 처음 받은 패에 같은 달 4장이면 바로 이김
+  if(cpuG)for(const p of [0,1]){const m=[...Array(12)].findIndex((_,i)=>hw4(G.hand[p],i+1));if(m>=0){setTimeout(()=>end(p,`${m+1}월 총통`),500);break}}
+  return {sync,kill:()=>{over='killed'}}
 }
 
 // ── 낱말 가로세로: 낱말 창고에서 판을 그때그때 만듦 (난이도가 높을수록 낱말 수·판 크기 늘어남) ──

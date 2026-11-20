@@ -69,13 +69,13 @@ function gamesListen(){if(GINV){GINV();GINV=null}if(LOCAL||!SYNC.live||!ME)retur
   GINV=gamesRef().where('b','==',ME).where('status','==','invite').onSnapshot(qs=>{if(ME!==me0)return;
     qs.docs.forEach(doc=>{const d=doc.data();if(GSEEN.has(doc.id)||Date.now()-d.ts>30*60e3)return;GSEEN.add(doc.id);
       try{navigator.vibrate&&navigator.vibrate([120,60,120])}catch(e){}gameInvite(doc.id,d)})},e=>console.warn('games',e))}
-function gameInvite(gid,d){const who=mem(d.a)||{name:'가족'},om=d.type==='omok';
-  sheet(`<div class="result"><div class="big">${esc(who.name)}님의 ${om?'오목':'빙고'} 대결 신청</div><div class="fact">${om?`${d.size||OM_N}×${d.size||OM_N} 판 · ${esc(who.name)}님이 흑(먼저)`:`${d.n}×${d.n} 판 · 먼저 ${d.goal}줄`}</div>
+function gameInvite(gid,d){const who=mem(d.a)||{name:'가족'},om=d.type==='omok',mg=d.type==='matgo';
+  sheet(`<div class="result"><div class="big">${esc(who.name)}님의 ${mg?'맞고':om?'오목':'빙고'} 대결 신청</div><div class="fact">${mg?`화투 맞고 · ${esc(who.name)}님이 먼저 칩니다`:om?`${d.size||OM_N}×${d.size||OM_N} 판 · ${esc(who.name)}님이 흑(먼저)`:`${d.n}×${d.n} 판 · 먼저 ${d.goal}줄`}</div>
     <div class="actions"><button class="btn ghost" id="gno">다음에</button><button class="btn" id="gyes">한 판 하기</button></div></div>`,true,null);
   $('#gno').onclick=()=>{gamesRef().doc(gid).update({status:'decline'}).catch(()=>{});close();render()};
   $('#gyes').onclick=async()=>{try{const s=await gamesRef().doc(gid).get();const x=s.data();
       if(!x||x.status!=='invite'){toast('신청이 취소됐어요');close();return}
-      await gamesRef().doc(gid).update({status:'play',ts:Date.now()});(x.type==='omok'?omokOnline:bingoOnline)(gid)}catch(e){console.warn(e);toast('시작하지 못했어요')}}}
+      await gamesRef().doc(gid).update({status:'play',ts:Date.now()});(x.type==='matgo'?matgoOnline:x.type==='omok'?omokOnline:bingoOnline)(gid)}catch(e){console.warn(e);toast('시작하지 못했어요')}}}
 async function gameFromPush(id){try{const s=await gamesRef().doc(id).get();const d=s.data();if(d&&d.b===ME&&d.status==='invite'){GSEEN.add(id);gameInvite(id,d)}}catch(e){}}
 
 // ── 지뢰찾기 ──
